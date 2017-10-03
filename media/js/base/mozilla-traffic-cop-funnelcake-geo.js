@@ -29,7 +29,6 @@ Expectations (expressed in logic below) of these kinds of tests:
     TCFCGeoExp.init = function(config) {
         var experimentConfig = config.experimentConfig;
         var countryCode = config.countryCode;
-
         var experimentId = experimentConfig.Id;
         var geoNonmatchCookieName = experimentId + '_non' + countryCode;
 
@@ -124,7 +123,6 @@ Expectations (expressed in logic below) of these kinds of tests:
     // starts the traffic cop experiment
     TCFCGeoExp.runExperiment = function(config) {
         var rawls = new Mozilla.TrafficCop(config);
-
         rawls.init();
     };
 
