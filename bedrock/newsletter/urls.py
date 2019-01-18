@@ -27,12 +27,17 @@ urlpatterns = (
         name='newsletter.updated'),
 
     # Confirm subscriptions
-    url('^newsletter/confirm/(?P<token>' + uuid_regex + ')/$',
+    url('^newsletter/confirm/(?P<token>%s)/$' % uuid_regex,
         views.confirm,
         name='newsletter.confirm'),
 
+    # Update country
+    url('^newsletter/country/(?P<token>%s)/$' % uuid_regex,
+        views.set_country,
+        name='newsletter.country'),
+
     # Request recovery message with link to manage subscriptions
-    url('^newsletter/recovery/',
+    url('^newsletter/recovery/$',
         views.recovery,
         name='newsletter.recovery'),
 
@@ -41,8 +46,14 @@ urlpatterns = (
         views.newsletter_subscribe,
         name='newsletter.subscribe'),
 
+    # Welcome program out-out confirmation page (bug 1442129)
+    url('^newsletter/opt-out-confirmation/$',
+        views.recovery,
+        name='newsletter.opt-out-confirmation'),
+
     # Branded signup pages for individual newsletters
     page('newsletter/mozilla', 'newsletter/mozilla.html'),
     page('newsletter/firefox', 'newsletter/firefox.html'),
     page('newsletter/developer', 'newsletter/developer.html'),
+    page('newsletter/country/success', 'newsletter/country_success.html'),
 )

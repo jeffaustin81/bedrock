@@ -11,6 +11,7 @@ from .map_410 import URLS_410
 @pytest.mark.smoke
 @pytest.mark.headless
 @pytest.mark.nondestructive
+@pytest.mark.django_db
 @pytest.mark.parametrize('url', URLS_410)
 def test_410_url(url, base_url):
     assert_valid_url(url, base_url=base_url, status_code=requests.codes.gone)
@@ -19,6 +20,7 @@ def test_410_url(url, base_url):
 @pytest.mark.smoke
 @pytest.mark.headless
 @pytest.mark.nondestructive
+@pytest.mark.django_db
 def test_404_url(base_url):
     assert_valid_url(
         '/en-US/abck',
@@ -29,12 +31,14 @@ def test_404_url(base_url):
 @pytest.mark.smoke
 @pytest.mark.headless
 @pytest.mark.nondestructive
+@pytest.mark.django_db
 def test_x_robots_tag(base_url):
     assert_valid_url(base_url, resp_headers={'x-robots-tag': 'noodp'})
 
 
 @pytest.mark.headless
 @pytest.mark.nondestructive
+@pytest.mark.django_db
 @pytest.mark.parametrize('url', [
     '/firefox/',
     '/firefox/all/',
@@ -46,7 +50,6 @@ def test_x_robots_tag(base_url):
     '/firefox/channel/',
     '/firefox/desktop/',
     '/firefox/developer/',
-    '/firefox/geolocation/',
     '/firefox/installer-help/',
     '/firefox/interest-dashboard/',
     '/firefox/latest/releasenotes/',
@@ -65,10 +68,7 @@ def test_x_robots_tag(base_url):
     '/firefox/unsupported/EOL/',
     # Legacy URLs (Bug 1110927)
     '/firefox/start/central.html',
-    '/firefox/sync/firstrun.html',
-    # Thunberbird URLs
-    '/thunderbird/all/',
-    '/thunderbird/releases/'
+    '/firefox/sync/firstrun.html'
 ])
 def test_url(url, base_url, follow_redirects=False):
     assert_valid_url(url, base_url=base_url,

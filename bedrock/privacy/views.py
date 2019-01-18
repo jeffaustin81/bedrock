@@ -80,16 +80,6 @@ class FirefoxPrivacyDocView(PrivacyDocView):
         return doc
 
 
-class FirefoxCliqzPrivacyDocView(PrivacyDocView):
-    template_name = 'privacy/notices/firefox-cliqz.html'
-
-    def get_legal_doc(self):
-        doc = super(FirefoxCliqzPrivacyDocView, self).get_legal_doc()
-        if len(doc['content'].select('.privacy-header-firefox')) > 0:
-            self.template_name = 'privacy/notices/firefox-cliqz-quantum.html'
-        return doc
-
-
 firefox_notices = FirefoxPrivacyDocView.as_view(
     legal_doc_name='firefox_privacy_notice')
 
@@ -97,8 +87,9 @@ firefox_os_notices = PrivacyDocView.as_view(
     template_name='privacy/notices/firefox-os.html',
     legal_doc_name='firefox_os_privacy_notice')
 
-firefox_cliqz_notices = FirefoxCliqzPrivacyDocView.as_view(
-    legal_doc_name='firefox-cliqz_privacy_notice')
+firefox_fire_tv_notices = PrivacyDocView.as_view(
+    template_name='privacy/notices/firefox-fire-tv.html',
+    legal_doc_name='Firefox_FireTV_Privacy_Notice')
 
 firefox_cloud_notices = PrivacyDocView.as_view(
     template_name='privacy/notices/firefox-cloud.html',
@@ -111,6 +102,18 @@ firefox_hello_notices = PrivacyDocView.as_view(
 firefox_focus_notices = PrivacyDocView.as_view(
     template_name='privacy/notices/firefox-focus.html',
     legal_doc_name='focus_privacy_notice')
+
+firefox_lite_notices = PrivacyDocView.as_view(
+    template_name='privacy/notices/firefox-lite.html',
+    legal_doc_name='firefox_lite_privacy_notice')
+
+firefox_reality_notices = PrivacyDocView.as_view(
+    template_name='privacy/notices/firefox-reality.html',
+    legal_doc_name='firefox_reality_privacy_notice')
+
+firefox_screenshotgo_notices = PrivacyDocView.as_view(
+    template_name='privacy/notices/firefox-screenshotgo.html',
+    legal_doc_name='firefox_screenshotgo_privacy_notice')
 
 thunderbird_notices = PrivacyDocView.as_view(
     template_name='privacy/notices/thunderbird.html',
@@ -125,6 +128,10 @@ facebook_notices = PrivacyDocView.as_view(
     legal_doc_name='facebook_privacy_info')
 facebook_notices = xframe_allow(facebook_notices)
 
+firefox_monitor_notices = PrivacyDocView.as_view(
+    template_name='privacy/notices/firefox-monitor.html',
+    legal_doc_name='firefox_monitor_terms_privacy')
+
 
 @cache_page(60 * 60)  # cache for 1 hour
 def privacy(request):
@@ -132,8 +139,7 @@ def privacy(request):
 
     template_vars = {
         'doc': process_legal_doc(doc['content']),
-        'localized': doc['localized'],
-        'translations': doc['translations'],
+        'active_locales': doc['active_locales'],
     }
 
     return l10n_utils.render(request, 'privacy/index.html', template_vars)

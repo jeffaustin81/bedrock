@@ -3,12 +3,15 @@
 <!doctype html>
 {# Note the "windows" class, without javascript platform-specific
      assets default to windows #}
-<html class="windows x86 no-js" lang="{{ LANG|replace('en-US', 'en') }}" dir="{{ DIR }}" data-latest-firefox="{{ latest_firefox_version }}" data-esr-versions="{{ esr_firefox_versions|join(' ') }}" {% if settings.OPTIMIZELY_PROJECT_ID %}data-optimizely-project-id="{{ settings.OPTIMIZELY_PROJECT_ID }}"{% endif %} {% if settings.GTM_CONTAINER_ID %}data-gtm-container-id="{{ settings.GTM_CONTAINER_ID }}"{% endif %} {% block gtm_page_id %}{% endblock %} {% if settings.STUB_ATTRIBUTION_RATE %}data-stub-attribution-rate="{{ settings.STUB_ATTRIBUTION_RATE }}"{% endif %}>
+<html class="windows x86 no-js" lang="{{ LANG|replace('en-US', 'en') }}" dir="{{ DIR }}" data-latest-firefox="{{ latest_firefox_version }}" data-esr-versions="{{ esr_firefox_versions|join(' ') }}" {% if settings.GTM_CONTAINER_ID %}data-gtm-container-id="{{ settings.GTM_CONTAINER_ID }}"{% endif %} {% block gtm_page_id %}{% endblock %} {% if settings.STUB_ATTRIBUTION_RATE %}data-stub-attribution-rate="{{ settings.STUB_ATTRIBUTION_RATE }}"{% endif %}>
   <head>
     <meta charset="utf-8">{# Note: Must be within first 512 bytes of page #}
 
-    {% javascript 'site' %}
+    {{ js_bundle('site') }}
+
+    <!--[if !lte IE 8]><!-->
     {% block experiments %}{% endblock %}
+    <!--<![endif]-->
 
 <!--
 {% include "includes/careers-teaser.html" %}
@@ -52,13 +55,13 @@
       <script src="{{ static('js/libs/html5shiv.js') }}"></script>
 
       {# Basic styles, only for IE8 and lower #}
-      {% stylesheet 'oldIE' %}
+      {{ css_bundle('oldIE') }}
     <![endif]-->
 
     <!--[if !lte IE 8]><!-->
     {# Global styles, hidden from IE8 and lower #}
     {% block site_css %}
-      {% stylesheet 'responsive' %}
+      {{ css_bundle('responsive') }}
     {% endblock %}
 
     {# Page-specific styles, hidden from IE8 and lower #}
@@ -68,8 +71,6 @@
     {% block extrahead %}
       {# Extra header stuff (scripts, styles, metadata, etc) seen by all browsers. Use the 'page_css' block for CSS you want to hide from IE8 and lower. #}
     {% endblock %}
-
-    {% block optimizely %}{% endblock %}
 
     {% block js_pretrack %}{# include JavaScript that must be run pre GA tracking here #}{% endblock %}
     {% block google_analytics %}
@@ -90,7 +91,7 @@
 
     {% block global_nav %}
       {% if LANG.startswith('en-') %}
-        {% include 'includes/global-nav.html' %}
+        {% include 'includes/protocol/navigation/index.html' %}
       {% endif %}
     {% endblock %}
 
@@ -173,33 +174,43 @@
     </div><!-- close #outer-wrapper -->
 
     <!--[if IE 9]>
-      <script src="{{ static('js/libs/matchMedia.js') }}"></script>
+      {{ js_bundle('matchmedia') }}
     <![endif]-->
 
     {% block site_js %}
-      {% javascript 'common' %}
+      <!--[if !lte IE 8]><!-->
+        {{ js_bundle('common') }}
+      <!--<![endif]-->
+
+      <!--[if lte IE 8]>
+        {{ js_bundle('common-ie8') }}
+      <![endif]-->
     {% endblock %}
 
     {# Bug 1279291 #}
     {% block stub_attribution %}
       {% if settings.STUB_ATTRIBUTION_RATE %}
-        {% javascript 'stub-attribution' %}
+        {{ js_bundle('stub-attribution') }}
       {% endif %}
     {% endblock %}
 
+    <!--[if !lte IE 8]><!-->
     {% block js %}{% endblock %}
 
     {# Bug 1381776 #}
     {% block update_notification %}
       {% if switch('firefox-update-notification', ['en-US']) %}
-        {% javascript 'firefox-update-notification' %}
+        {{ js_bundle('firefox-update-notification') }}
       {% endif %}
     {% endblock %}
 
     {% if settings.DEV %}
-      <!--[if !lte IE 8]><!-->
-        <script src="https://pontoon.mozilla.org/pontoon.js"></script>
-      <!--<![endif]-->
+      <script src="https://pontoon.mozilla.org/pontoon.js"></script>
     {% endif %}
+    <!--<![endif]-->
+
+    {# Bug 1299817 #}
+    {# Sets the HSTS header for the root domain #}
+    <img src="https://mozilla.org/set_hsts.gif" class="hidden">
   </body>
 </html>

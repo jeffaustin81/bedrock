@@ -1,23 +1,25 @@
 # see the following for documentation of these options
 # http://bedrock.readthedocs.io/en/latest/pipeline.html#configuration
 push_public_registry: true
-smoke_tests: true
 require_tag: true
 regions:
-  - usw
-  - tokyo
+  - oregon-b
   - frankfurt
+  - iowa-a
 apps:
-  - bedrock-stage
   - bedrock-prod
 integration_tests:
-  usw:
-    - headless
-    - firefox
+  oregon-b:
     - chrome
-    - ie
-    - ie8
-  tokyo:
+    - download
+    - firefox
     - headless
+    - ie
+    - ie9
   frankfurt:
+    - headless
+  iowa-a:
+    - chrome
+    - download
+    - firefox
     - headless

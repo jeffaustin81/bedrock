@@ -134,18 +134,6 @@
             return 32;
         },
 
-        needsSha1: function(ua) {
-            ua = ua || navigator.userAgent;
-            // Check for Windows XP, Server 2003, Vista.
-            // Matches sha-1 regex in Bouncer
-            // https://github.com/mozilla-services/go-bouncer/
-            var os = /Windows (?:NT 5.1|XP|NT 5.2|NT 6.0)/;
-            // Firefox uses its own trust store, so can continue to use sha-256.
-            var ff = /\sFirefox/;
-
-            return os.test(ua) && !ff.test(ua);
-        },
-
         platform: 'other',
         platformVersion: undefined,
         archType: 'x64',
@@ -158,14 +146,18 @@
         // to avoid lots of flickering
         var platform = window.site.platform = window.site.getPlatform();
         var version = window.site.platformVersion = window.site.getPlatformVersion();
+        var _version = version ? parseFloat(version) : 0;
 
         if (platform === 'windows') {
+            // Add class to allow Windows XP/Vista users to download Firefox 52 ESR, though these
+            // legacy platforms are now officially unsupported
+            if (_version >= 5.1 && _version <= 6) {
+                h.className += ' xpvista';
+            }
+
             // Add class to support downloading Firefox for Windows 64-bit on Windows 7 and later
-            if (version && parseFloat(version) >= 6.1) {
+            if (_version >= 6.1) {
                 h.className += ' win7up';
-            } else if (window.site.needsSha1()) {
-                // Add class to support sha-1 downloads for IE on Windows XP, Server 2003, Vista.
-                h.className += ' sha-1';
             }
         } else {
             h.className = h.className.replace('windows', platform);
@@ -190,6 +182,13 @@
         }
         if (archSize === 64) {
             h.className += ' x64';
+        }
+
+        // Add class to reflect if user agent is Firefox. Cherry-picked from mozilla-client.js.
+        var isFirefox = /\s(Firefox|FxiOS)/.test(navigator.userAgent) && !/Iceweasel|IceCat|SeaMonkey|Camino|like\ Firefox/i.test(navigator.userAgent);
+
+        if (isFirefox) {
+            h.className += ' is-firefox';
         }
 
         // Add class to reflect javascript availability for CSS

@@ -13,13 +13,11 @@ from bedrock.base.urlresolvers import reverse
 from bedrock.firefox.firefox_details import firefox_desktop
 from bedrock.firefox.templatetags.helpers import android_builds, ios_builds
 from bedrock.releasenotes.models import get_latest_release_or_404, get_release_or_404, get_releases_or_404
-from bedrock.thunderbird.details import thunderbird_desktop
 
 SUPPORT_URLS = {
     'Firefox for Android': 'https://support.mozilla.org/products/mobile',
     'Firefox for iOS': 'https://support.mozilla.org/products/ios',
     'Firefox': 'https://support.mozilla.org/products/firefox',
-    'Thunderbird': 'https://support.mozilla.org/products/thunderbird/',
 }
 
 
@@ -29,8 +27,6 @@ def release_notes_template(channel, product, version=None):
         return 'firefox/releases/dev-browser-notes.html'
 
     dir = 'firefox'
-    if product == 'Thunderbird':
-        dir = 'thunderbird'
 
     return ('{dir}/releases/{channel}-notes.html'
             .format(dir=dir, channel=channel.lower()))
@@ -44,12 +40,7 @@ def equivalent_release_url(release):
 
 
 def get_download_url(release):
-    if release.product == 'Thunderbird':
-        if release.channel == 'Beta':
-            return reverse('thunderbird.channel')
-        else:
-            return reverse('thunderbird.index')
-    elif release.product == 'Firefox for Android':
+    if release.product == 'Firefox for Android':
         return android_builds(release.channel)[0]['download_link']
     elif release.product == 'Firefox for iOS':
         return ios_builds(release.channel)[0]['download_link']
@@ -88,10 +79,13 @@ def release_notes(request, version, product='Firefox'):
     if not version:
         raise Http404
 
+    # Show a "coming soon" page for any unpublished Firefox releases
+    include_drafts = product in ['Firefox', 'Firefox for Android']
+
     try:
-        release = get_release_or_404(version, product)
+        release = get_release_or_404(version, product, include_drafts)
     except Http404:
-        release = get_release_or_404(version + 'beta', product)
+        release = get_release_or_404(version + 'beta', product, include_drafts)
         return HttpResponseRedirect(release.get_absolute_url())
 
     return l10n_utils.render(
@@ -109,8 +103,6 @@ def release_notes(request, version, product='Firefox'):
 def system_requirements(request, version, product='Firefox'):
     release = get_release_or_404(version, product)
     dir = 'firefox'
-    if product == 'Thunderbird':
-        dir = 'thunderbird'
     return l10n_utils.render(
         request, '{dir}/releases/system_requirements.html'.format(dir=dir),
         {'release': release, 'version': version})
@@ -146,15 +138,15 @@ def latest_sysreq(request, product='firefox', platform=None, channel=None):
 
 def releases_index(request, product):
     releases = {}
-    esr_major_versions = range(
-        10, int(firefox_desktop.latest_version().split('.')[0]), 7)
+    # Starting with Firefox 10, ESR had been offered every 7 major releases, but
+    # Firefox 59 wasn't ESR. Firefox 60 became the next ESR instead, and since
+    # then ESR is offered every 8 major releases.
+    esr_major_versions = (range(10, 59, 7) +
+        range(60, int(firefox_desktop.latest_version().split('.')[0]), 8))
 
     if product == 'Firefox':
         major_releases = firefox_desktop.firefox_history_major_releases
         minor_releases = firefox_desktop.firefox_history_stability_releases
-    elif product == 'Thunderbird':
-        major_releases = thunderbird_desktop.thunderbird_history_major_releases
-        minor_releases = thunderbird_desktop.thunderbird_history_stability_releases
 
     for release in major_releases:
         major_version = float(re.findall(r'^\d+\.\d+', release)[0])
@@ -180,7 +172,7 @@ def releases_index(request, product):
 def nightly_feed(request):
     """Serve an Atom feed with the latest changes in Firefox Nightly"""
     notes = {}
-    releases = get_releases_or_404('firefox', 'nightly')[0:5]
+    releases = get_releases_or_404('firefox', 'nightly', 5)
 
     for release in releases:
         link = reverse('firefox.desktop.releasenotes',
@@ -191,7 +183,7 @@ def nightly_feed(request):
                 continue
 
             if note.is_public and note.tag:
-                note.link = link + '#note-' + str(note.id)
+                note.link = '%s#note-%s' % (link, note.id)
                 note.version = release.version
                 notes[note.id] = note
 

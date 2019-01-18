@@ -1034,8 +1034,6 @@ redirectpatterns = (
     redirect('^docs/how-to-document\.html$', '/contribute/writing/how-to'),
     redirect('^docs/hybrid-cd\.html$', 'http://developer.mozilla.org/en/Creating_a_hybrid_CD'),
     redirect('^docs/jargon\.html$', 'http://developer.mozilla.org/en/Glossary'),
-    redirect('^docs/lxr-comments\.html$',
-             '/contribute/writing/lxr-comments'),
     redirect('^docs/mdp/$', '/contribute/writing/'),
     redirect('^docs/modunote\.htm$', 'http://developer.mozilla.org/en/Modularization_Techniques'),
     redirect('^docs/mozilla-faq\.html$', 'http://developer.mozilla.org/en/Mozilla_Release_FAQ'),
@@ -1102,7 +1100,8 @@ redirectpatterns = (
     redirect('^feedback\.html$', '/contact/'),
     redirect('^firebird$', 'http://www.firefox.com'),
     redirect('^get-involved\.html$', '/contribute/'),
-    redirect('^glimpsesearch\.html$', 'http://lxr.mozilla.org/'),
+    redirect('^foundation/mocosc/$', '/foundation/moco/'),
+    redirect('^glimpsesearch\.html$', 'https://dxr.mozilla.org/'),
     redirect('^hacking/bonsai\.html$', 'http://developer.mozilla.org/en/Hacking_with_Bonsai'),
     redirect('^hacking/code-review-faq\.html$', 'http://developer.mozilla.org/en/Code_Review_FAQ'),
     redirect('^hacking/coding-introduction\.html$',
@@ -1644,6 +1643,10 @@ redirectpatterns = (
     redirect('^performance/leak-brownbag\.html$',
              'http://wiki.mozilla.org/Performance:Leak_Tools'),
     redirect('^privacy-policy(\.html|/.*)?$', '/privacy/websites/'),
+    redirect('^projects/calendar/$', 'https://www.thunderbird.net/calendar/'),
+    redirect('^projects/calendar/holidays/$', 'https://www.thunderbird.net/calendar/holidays/'),
+    # bug 885799, 952429
+    redirect(r'^projects/calendar/holidays\.html$', 'https://www.thunderbird.net/calendar/holidays/'),
     redirect('^products/camino/badges/$', 'http://caminobrowser.org/community/promotion/'),
     redirect('^products/camino/features/searchCustomization\.html$',
              'http://caminobrowser.org/help/'),
@@ -1911,13 +1914,13 @@ redirectpatterns = (
     redirect('^projects/ui/accessibility/span-checkbox\.html$',
              '/access/samples/span-checkbox.html'),
     redirect('^projects/ui/accessibility/ISimpleDOMNode\.idl$',
-             'http://lxr.mozilla.org/seamonkey/source/'
+             'https://dxr.mozilla.org/seamonkey/source/'
              'accessible/public/msaa/ISimpleDOMNode.idl?raw=1'),
     redirect('^projects/ui/accessibility/ISimpleDOMText\.idl$',
-             'http://lxr.mozilla.org/seamonkey/source/'
+             'https://dxr.mozilla.org/seamonkey/source/'
              'accessible/public/msaa/ISimpleDOMText.idl?raw=1'),
     redirect('^projects/ui/accessibility/ISimpleDOMDocument\.idl$',
-             'http://lxr.mozilla.org/seamonkey/source/'
+             'https://dxr.mozilla.org/seamonkey/source/'
              'accessible/public/msaa/ISimpleDOMDocument.idl?raw=1'),
     redirect('^projects/ui/accessibility/accesskey\.html$',
              '/access/keyboard/accesskey'),
@@ -2004,6 +2007,59 @@ redirectpatterns = (
     redirect('^status/minutes\.html$', 'https://wiki.mozilla.org/WeeklyUpdates'),
     redirect('^store$', 'https://store.mozilla.org'),
     redirect('^testdrivers$', 'http://wiki.mozilla.org/B2G_Testdrivers_Program'),
+    # bug 1124038
+    redirect(r'^thunderbird/organizations/(?:all-esr\.html|faq/?)$', 'https://www.thunderbird.net/organizations/'),
+    # bug 1123399, 1150649
+    redirect(r'^thunderbird/all\.html?$', 'https://www.thunderbird.net/thunderbird/all/'),
+    redirect(r'^thunderbird/all-beta\.html?$', 'https://www.thunderbird.net/thunderbird/beta/all/'),
+    redirect(r'^thunderbird/early_releases/?$', 'https://www.thunderbird.net/thunderbird/beta/all/'),
+    redirect(r'^thunderbird/early_releases/downloads/?$', 'https://www.thunderbird.net/thunderbird/beta/all/'),
+    # bug 1124042
+    redirect(r'^thunderbird/features/email_providers\.html$', 'https://www.thunderbird.net/email-providers/'),
+    # bug 1081917, 1029829, 1029838
+    redirect(r'^thunderbird/releases/(?P<version>0\.\d)\.html$',
+             'http://website-archive.mozilla.org/www.mozilla.org/thunderbird_releasenotes'
+             '/en-US/thunderbird/releases/{version}.html'),
+    # should catch everything 1.* to 29.*
+    redirect(r'^thunderbird/(?P<version>(?:\d|[12]\d)\.[^/]+)/'
+             '(?P<page>firstrun|releasenotes|start|system-requirements|whatsnew)/$',
+             'http://website-archive.mozilla.org/www.mozilla.org/thunderbird_releasenotes'
+             '/en-US/thunderbird/{version}/{page}/'),
+    # bug 1209720
+    redirect(r'^thunderbird/releasenotes/?$', 'https://www.thunderbird.net/thunderbird/releases/'),
+    # bug 1211007
+    redirect(r'^thunderbird/download/?', 'https://www.thunderbird.net/'),
+    # bug 1133266
+    redirect(r'^thunderbird/legal/privacy/?$', 'privacy.notices.thunderbird'),
+    redirect(r'^thunderbird/about/privacy-policy/?$',
+             'privacy.archive.thunderbird-2010-06'),
+    # bug 1196578
+    redirect(r'^thunderbird/about/legal/eula/?$', 'legal.eula'),
+    redirect(r'^thunderbird/about/legal/eula/thunderbird2',
+             'legal.eula.thunderbird-2-eula'),
+    redirect(r'^thunderbird/about/legal/eula/thunderbird',
+             'legal.eula.thunderbird-1.5-eula'),
+    # bug 1204579
+    redirect(r'^thunderbird/2.0.0.0/eula/?$', 'legal.eula.thunderbird-2-eula'),
+    redirect(r'^thunderbird/about/legal/?$', 'legal.terms.mozilla'),
+    redirect(r'^thunderbird/about(/mission)?/?$',
+             'https://wiki.mozilla.org/Thunderbird'),
+    redirect(r'^thunderbird/(about/(careers|contact|get-involved)|community)/?$',
+             'https://wiki.mozilla.org/Thunderbird#Contributing'),
+    redirect(r'^thunderbird/(?P<version>\d\.\d(?:a|b|rc)\d|[6-9]\.0beta)/?$',
+             'http://website-archive.mozilla.org/www.mozilla.org/thunderbird'
+             '/thunderbird/{version}/'),
+    redirect(r'^thunderbird/about/(?P<page>board|press|staff)/',
+             'http://website-archive.mozilla.org/www.mozilla.org/thunderbird'
+             '/thunderbird/about/{page}/'),
+    # bug 1388914
+    redirect(r'^thunderbird/all/$', 'https://www.thunderbird.net/thunderbird/all/'),
+    redirect(r'^thunderbird/beta/(?P<path>.*)$', 'https://www.thunderbird.net/thunderbird/beta/{path}'),
+    redirect(r'^thunderbird/(?P<version>[^/]+)/releasenotes/$',
+             'https://www.thunderbird.net/thunderbird/{version}/releasenotes/'),
+    redirect(r'^thunderbird/(?P<version>[^/]+)/system-requirements/$',
+             'https://www.thunderbird.net/thunderbird/{version}/system-requirements/'),
+    redirect(r'^thunderbird/?(?P<path>.*)', 'https://www.thunderbird.net/{path}'),
     redirect('^tinderbox\.html$', 'http://developer.mozilla.org/en/Tinderbox'),
     redirect('^tools\.html$', 'http://developer.mozilla.org/en/Mozilla_Development_Tools'),
     redirect('^university/courses\.html$', 'http://education.mozilla.org'),
@@ -2053,4 +2109,12 @@ redirectpatterns = (
     # Bug 1255882
     # multiple trailing slashes
     redirect(r'^(.*[^/])//+$', '/{}/', locale_prefix=False),
+    # bug 1405436
+    # trailing end parenthesis
+    redirect(r'^(.*)/\)$', '/{}/', locale_prefix=False),
+    # trailing LRM (Left to Right Mark)
+    # These were causing 404s due to bad Wordpress links ending in "%E2%80%8E"
+    # When passing through the URL system it is a \u200E character.
+    # https://en.wikipedia.org/wiki/Left-to-right_mark
+    redirect(ur'^(.*)\u200E$', '/{}', locale_prefix=False),
 )

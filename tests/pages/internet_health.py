@@ -10,9 +10,9 @@ from pages.regions.download_button import DownloadButton
 
 class InternetHealthPage(BasePage):
 
-    URL_TEMPLATE = '/{locale}/internet-health'
+    URL_TEMPLATE = '/{locale}/internet-health/'
 
-    _download_button_locator = (By.ID, 'global-nav-download-firefox')
+    _download_button_locator = (By.ID, 'protocol-nav-download-firefox')
 
     @property
     def download_button(self):

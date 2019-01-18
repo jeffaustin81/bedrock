@@ -5,7 +5,7 @@
 {% extends "mozorg/contribute/contribute-base.html" %}
 
 {% block page_title %}
-    {{ _('Volunteer Opportunities at Mozilla') }}
+  {{ _('Volunteer Opportunities at Mozilla') }}
 {% endblock %}
 
 {% block body_id %}landing{% endblock %}
@@ -151,6 +151,6 @@
 {% endblock contrib_content %}
 
 {% block js %}
-  {% javascript 'contribute-base' %}
-  {% javascript 'contribute-landing' %}
+  {{ js_bundle('contribute-base') }}
+  {{ js_bundle('contribute-landing') }}
 {% endblock %}

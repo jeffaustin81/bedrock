@@ -3,7 +3,7 @@
 # $1 should be the properties name for this run
 # defaults
 DRIVER=SauceLabs
-MARK_EXPRESSION="not headless"
+MARK_EXPRESSION="not headless and not download"
 
 case $1 in
   chrome)
@@ -12,18 +12,22 @@ case $1 in
     ;;
   firefox)
     BROWSER_NAME=firefox
-    BROWSER_VERSION="45.0"
+    BROWSER_VERSION="57.0"
     PLATFORM="Windows 10"
     ;;
   ie)
     BROWSER_NAME="internet explorer"
     PLATFORM="Windows 10"
     ;;
-  ie8)
+  ie9)
     BROWSER_NAME="internet explorer"
-    BROWSER_VERSION="8.0"
+    BROWSER_VERSION="9.0"
     PLATFORM="Windows 7"
-    MARK_EXPRESSION="sanity and not headless"
+    MARK_EXPRESSION=sanity
+    ;;
+  download)
+    DRIVER=
+    MARK_EXPRESSION=download
     ;;
   headless)
     DRIVER=
@@ -48,15 +52,11 @@ source $BIN_DIR/set_git_env_vars.sh
 if [ -z "${BASE_URL}" ]; then
   # start bedrock
   docker run -d --rm \
-    --name bedrock-code-${GIT_COMMIT_SHORT} \
-    -e ALLOWED_HOSTS="*" \
-    -e SECRET_KEY=foo \
-    -e DEBUG=False \
-    -e DATABASE_URL=sqlite:////tmp/temp.db \
-    -e GUNICORN_WORKER_CLASS=sync \
-    mozorg/bedrock_code:${GIT_COMMIT} bin/run-for-integration-tests.sh
+    --name bedrock-code-${BRANCH_AND_COMMIT} \
+    --env-file docker/envfiles/prod.env \
+    ${DEPLOYMENT_DOCKER_IMAGE} bin/run-prod.sh
 
-  DOCKER_LINKS=(--link bedrock-code-${GIT_COMMIT_SHORT}:bedrock)
+  DOCKER_LINKS=(--link bedrock-code-${BRANCH_AND_COMMIT}:bedrock)
   BASE_URL="http://bedrock:8000"
 fi
 
@@ -65,27 +65,27 @@ if [ "${DRIVER}" = "Remote" ]; then
   # Waits until all nodes are ready and then runs tests against a local
   # bedrock instance.
 
-  SELENIUM_VERSION=${SELENIUM_VERSION:-2.48.2}
+  SELENIUM_VERSION=${DOCKER_SELENIUM_VERSION:-"3.5.3-astatine"}
 
   docker pull selenium/hub:${SELENIUM_VERSION}
   docker pull selenium/node-firefox:${SELENIUM_VERSION}
 
   # start selenium grid hub
   docker run -d --rm \
-    --name bedrock-selenium-hub-${GIT_COMMIT_SHORT} \
+    --name bedrock-selenium-hub-${BRANCH_AND_COMMIT} \
     selenium/hub:${SELENIUM_VERSION}
-  DOCKER_LINKS=(${DOCKER_LINKS[@]} --link bedrock-selenium-hub-${GIT_COMMIT_SHORT}:hub)
+  DOCKER_LINKS=(${DOCKER_LINKS[@]} --link bedrock-selenium-hub-${BRANCH_AND_COMMIT}:hub)
   SELENIUM_HOST="hub"
 
   # start selenium grid nodes
   for NODE_NUMBER in `seq ${NUMBER_OF_NODES:-5}`; do
-    docker run -d --rm \
-      --name bedrock-selenium-node-${NODE_NUMBER}-${GIT_COMMIT_SHORT} \
+    docker run -d --rm --shm-size 2g \
+      --name bedrock-selenium-node-${NODE_NUMBER}-${BRANCH_AND_COMMIT} \
       ${DOCKER_LINKS[@]} \
       selenium/node-firefox:${SELENIUM_VERSION}
     while ! ${SELENIUM_READY}; do
-      IP=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' bedrock-selenium-node-${NODE_NUMBER}-${GIT_COMMIT_SHORT}`
-      CMD="docker run --rm --link bedrock-selenium-hub-${GIT_COMMIT_SHORT}:hub tutum/curl curl http://hub:4444/grid/api/proxy/?id=http://${IP}:5555 | grep 'proxy found'"
+      IP=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' bedrock-selenium-node-${NODE_NUMBER}-${BRANCH_AND_COMMIT}`
+      CMD="docker run --rm --link bedrock-selenium-hub-${BRANCH_AND_COMMIT}:hub tutum/curl curl http://hub:4444/grid/api/proxy/?id=http://${IP}:5555 | grep 'proxy found'"
       if eval ${CMD}; then SELENIUM_READY=true; fi
     done
   done

@@ -1,0 +1,36 @@
+{% extends 'base-pebbles.html' %}
+
+{% block site_css %}
+  {{ css_bundle('protocol-core') }}
+{% endblock %}
+
+{% block old_ie_styles %}
+  {{ css_bundle('protocol-oldIE') }}
+{% endblock %}
+
+{% block tabzilla_tab %}{% endblock %}
+
+{% block site_header %}
+  {% if LANG.startswith('en-') %}
+    {% include 'includes/protocol/navigation/index.html' %}
+  {% else %}
+    {% set logo_src = static('img/pebbles/moz-wordmark-dark-reverse.svg') %}
+    {% include 'mozorg/home/includes/nav.html' %}
+  {% endif %}
+{% endblock %}
+
+{% block site_footer %}
+  {% include 'includes/protocol/site-footer.html' %}
+{% endblock %}
+
+{% block site_js %}
+<!--[if !lte IE 8]><!-->
+  {{ js_bundle('common-protocol') }}
+<!--<![endif]-->
+
+<!--[if lte IE 8]>
+  {{ js_bundle('common-ie8') }}
+<![endif]-->
+{% endblock %}
+
+{% block update_notification %}{% endblock %}

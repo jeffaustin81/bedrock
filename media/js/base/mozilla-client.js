@@ -17,6 +17,7 @@ if (typeof Mozilla === 'undefined') {
      * @see {@link https://developer.mozilla.org/en-US/docs/Gecko_user_agent_string_reference}
      */
     var Client = {};
+    var FxALastSupported = 40; // the FxAccounts team provided this number in bug 1457004#c21 they don't want to support anything beneath it
 
     /**
      * Detect whether the user's browser is Firefox on any platform. This includes WebKit-based Firefox for iOS.
@@ -184,13 +185,13 @@ if (typeof Mozilla === 'undefined') {
         isESR = isESR === undefined ? false : isESR;
         userVer = userVer === undefined ? Client._getFirefoxVersion() : userVer;
 
-        var $html = $(document.documentElement);
+        var html = document.documentElement;
 
-        if (!$html.attr('data-esr-versions') || !$html.attr('data-latest-firefox')) {
+        if (!html.getAttribute('data-esr-versions') || !html.getAttribute('data-latest-firefox')) {
             return false;
         }
 
-        var versions = isESR ? $html.attr('data-esr-versions').split(' ') : [$html.attr('data-latest-firefox')];
+        var versions = isESR ? html.getAttribute('data-esr-versions').split(' ') : [html.getAttribute('data-latest-firefox')];
         var userVerArr = userVer.match(/^(\d+(?:\.\d+){1,2})/)[1].split('.');
         var isUpToDate = false;
 
@@ -209,6 +210,46 @@ if (typeof Mozilla === 'undefined') {
         }
 
         return isUpToDate;
+    };
+
+    /**
+     * Determine if a client version number is at least a specific number of major releases old.
+     * @param {String} clientVer - Client version number "58.0a1", "56.0".
+     * @param {Number} majorVer - Number of major versions old a client considered 'out of date' should be.
+     * @param {String} latestVer - Current latest release version number.
+     * @return {Boolean}
+     */
+    Client.isFirefoxOutOfDate = function(clientVer, majorVer, latestVer) {
+        var clientVersion = parseInt(clientVer, 10);
+        var latestVersion = typeof latestVer === 'undefined' ? parseInt(document.documentElement.getAttribute('data-latest-firefox'), 10) : parseInt(latestVer, 10);
+        var majorVersions = Math.max(parseInt(majorVer, 10), 1); // majorVersions must be at least 1.
+
+        if (isNaN(latestVersion) || isNaN(clientVersion) || isNaN(majorVersions)) {
+            return false;
+        }
+
+        return clientVersion <= latestVersion - majorVersions;
+    };
+
+    /**
+     * Determine if a /whatsnew or /firstrun page is at least a specific number of major releases old.
+     * @param {Number} majorVer - Number of major versions old a client considered 'out of date' should be.
+     * @param {String} pathName - Version number URL pathname e.g. '/firefox/56.0.1/'.
+     * @param {String} latestVer - Current latest release version number.
+     * @return {Boolean}
+     */
+    Client.isFirefoxURLOutOfDate = function(majorVer, pathName, latestVer) {
+        var path = typeof pathName === 'undefined' ? window.location.pathname : pathName;
+        var urlVersion =  /firefox\/(\d+(?:\.\d+)?\.\da?\d?)/.exec(path);
+        var version = urlVersion ? parseInt(urlVersion[1], 10) : null;
+        var latestVersion = typeof latestVer === 'undefined' ? parseInt(document.documentElement.getAttribute('data-latest-firefox'), 10) : parseInt(latestVer, 10);
+        var majorVersions = Math.max(parseInt(majorVer, 10), 1); // majorVersions must be at least 1.
+
+        if (version && latestVersion && (version <= latestVersion - majorVersions)) {
+            return true;
+        }
+
+        return false;
     };
 
     /**
@@ -279,6 +320,116 @@ if (typeof Mozilla === 'undefined') {
             }
         }));
     };
+
+    /**
+     * Use the async mozUITour API of Firefox to retrieve the user's FxA info. See
+     * http://bedrock.readthedocs.org/en/latest/uitour.html for details.
+     *
+     * FxA was previously branded as Sync.
+     *
+     * The various states here are... complicated
+     * This is the intention:
+     *     - firefox: true if Firefox
+     *     - legacy: true if older than FxALastSupported
+     *     - mobile: false | android | ios
+     *     - setup: true if Fx >= 29 and logged into FxA
+     *     - desktopDevices & mobileDevices
+     *          - if logged in and Fx >= 50: the number of linked devices
+     *          - if logged in and Fx < 50 && Fx > 29: 'unknown'
+     *          - if logged out or Fx < 29 or not Fx: false
+     * Notes:
+     * - Fx < 50 has FxA and UITour support but the API does not return device counts
+     * - Fx < FxALastSupported accounts.firefox.com does not work
+     *     - FxALastSupported is supplied by the FxA team
+     *     - these versions are still capable of logging in through the browser
+     *     - differentiated because we generally do not give these versions the FxA calls to action (eg. "Create an Account")
+     * - Fx < 29 the mozUITour API is not available, though the user may still be logged in
+     * - If you're curious, "sync" began with Fx 4.
+     *
+     * @param  {Function} callback - callback function to be executed with the FxA details
+     * @return {None}
+     */
+    Client.getFxaDetails = function (callback) {
+        // Fire the callback function immediately if FxaDetails are already defined
+        if (Client.FxaDetails) {
+            callback(Client.FxaDetails);
+
+            return;
+        }
+        // set up the object with default values of false
+        var details = Client.FxaDetails = {
+            'firefox': false,
+            'legacy': false,
+            'mobile': false,
+            'setup': false,
+            'desktopDevices': false,
+            'mobileDevices': false
+        };
+
+        // override object values as we get more information
+        if(Client.isFirefoxAndroid) {
+            details.firefox = true;
+            details.mobile = 'android';
+            returnFxaDetails();
+        } else if (Client.isFirefoxiOS) {
+            details.firefox = true;
+            details.mobile = 'ios';
+            returnFxaDetails();
+        } else if(Client.isFirefoxDesktop) {
+            details.firefox = true;
+            // firefox desktop
+            var userVer = Client._getFirefoxVersion();
+            if(parseFloat(userVer) < 29) {
+                // UITour not supported
+                details.legacy = true;
+            } else {
+                // UITour supported
+                // still note if it's older than accounts.firefox.com supports
+                if (parseFloat(userVer) < FxALastSupported) {
+                    details.legacy = true;
+                }
+
+                // callbackID to make sure we're responding to our request
+                var callbackID = Math.random().toString(36).replace(/[^a-z]+/g, '');
+
+                // UITour API response event handler, checks for callbackID
+                var listener = function (event) {
+                    if (!event.detail || !event.detail.data || event.detail.callbackID !== callbackID) {
+                        return;
+                    }
+                    window.clearTimeout(timer);
+                    document.removeEventListener('mozUITourResponse', listener, false);
+
+                    // device counts
+                    // device counts are only available in Fx50+, fallback 'unknown' if not detectable
+                    details.setup = event.detail.data.hasOwnProperty('setup') ? event.detail.data.setup : 'unknown';
+                    details.desktopDevices =  event.detail.data.hasOwnProperty('desktopDevices') ? event.detail.data.desktopDevices : 'unknown';
+                    details.mobileDevices =  event.detail.data.hasOwnProperty('mobileDevices') ? event.detail.data.mobileDevices : 'unknown';
+
+                    returnFxaDetails();
+                };
+
+                // Trigger the UITour API and start listening for the reponse
+                document.addEventListener('mozUITourResponse', listener, false);
+                document.dispatchEvent(new CustomEvent('mozUITour', {
+                    'bubbles': true,
+                    'detail': {
+                        'action': 'getConfiguration',
+                        'data': { 'configuration': 'sync', 'callbackID': callbackID }
+                    }
+                }));
+            }
+        }
+
+        function returnFxaDetails() {
+            window.clearTimeout(timer);
+            callback(details);
+        }
+
+        // Fire the fallback function in .4 seconds
+        var timer = window.setTimeout(returnFxaDetails, 400);
+    };
+
 
     // Append static properties for faster access
     Client.isFirefox = Client._isFirefox();

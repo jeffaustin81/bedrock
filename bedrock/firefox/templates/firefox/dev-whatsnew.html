@@ -8,10 +8,11 @@
 
 {% block gtm_page_id %}data-gtm-page-id="/firefox/dev-whatsnew/"{% endblock %}
 
-{% block extra_meta %}<meta name="robots" content="noindex">{% endblock %}
+{# "noindex" pages should not have the canonical or hreflang tags: bug 1442331 #}
+{% block canonical_urls %}<meta name="robots" content="noindex,follow">{% endblock %}
 
 {% block page_css %}
-  {% stylesheet 'firefox_developer_firstrun' %}
+  {{ css_bundle('firefox_developer_firstrun') }}
 {% endblock %}
 
 {% block page_title_prefix %}{% endblock %}
@@ -20,7 +21,7 @@
 {% block page_favicon %}{{ static('img/firefox/developer/favicon.png') }}{% endblock %}
 {% block page_favicon_large %}{{ static('img/firefox/developer/favicon-196.png') }}{% endblock %}
 {% block page_image %}{{ static('img/firefox/developer/page-image.png') }}{% endblock %}
-{% block page_og_url %}{{ url('firefox.developer') }}{% endblock %}
+{% block page_og_url %}{{ url('firefox.developer.index') }}{% endblock %}
 
 {% block page_og_desc %}
   {{_('Built for those who build the Web. Introducing the only browser made for developers.')}}

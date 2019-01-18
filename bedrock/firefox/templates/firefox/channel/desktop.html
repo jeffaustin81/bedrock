@@ -37,8 +37,16 @@
     </header>
     {{ download_firefox('beta', platform='desktop', force_direct=True, alt_copy=_('Download'), dom_id="desktop-beta-download") }}
     <p class="notice">
-      {{_('Firefox Beta automatically sends feedback to Mozilla.')}}
-      <a href="{{ url('privacy.notices.firefox') + '#telemetry' }}">{{_('Learn more')}}</a>
+      {% if l10n_has_tag('privacy_201806') %}
+        {%- trans link=url('privacy.notices.firefox') + '#pre-release' -%}
+          Beta is an unstable testing and development platform. By default, Beta sends data to Mozilla
+          — and sometimes our partners — to help us handle problems and try ideas.
+          <a href="{{ link }}">Learn what is shared</a>.
+        {%- endtrans -%}
+      {% else %}
+        {{_('Firefox Beta automatically sends feedback to Mozilla.')}}
+        <a href="{{ url('privacy.notices.firefox') + '#pre-release' }}">{{_('Learn more')}}</a>
+      {% endif %}
     </p>
     <p class="notice">
       {% trans feedback='https://input.mozilla.com/feedback' %}
@@ -50,7 +58,7 @@
     <div class="container">
       <ul>
         <li><a href="{{ firefox_url('desktop', 'notes', 'beta') }}">{{_('Release Notes')}}</a></li>
-        <li><a href="{{ firefox_url('desktop', 'all', 'beta') }}">{{_('All Languages and Builds (incl. Win 64)')}}</a></li>
+        <li><a href="{{ firefox_url('desktop', 'all', 'beta') }}">{% if l10n_has_tag('firefox_channel_bug1387466') %}{{_('All Languages and Platforms')}}{% else %}{{_('All Languages and Builds')}}{% endif %}</a></li>
       </ul>
     </div>
   </footer>
@@ -66,16 +74,24 @@
     </header>
     {{ download_firefox('alpha', platform='desktop', force_direct=True, alt_copy=_('Download'), dom_id="desktop-developer-download") }}
     <p class="notice">
-      {{_('Firefox Developer Edition automatically sends feedback to Mozilla.')}}
-      <a href="{{ url('privacy.notices.firefox') + '#telemetry' }}">{{_('Learn more')}}</a>
+      {% if l10n_has_tag('privacy_201806') %}
+        {%- trans link=url('privacy.notices.firefox') + '#pre-release' -%}
+        Developer Edition is an unstable testing and development platform. By default,
+        Developer Edition sends data to Mozilla  — and sometimes our partners —
+        to help us handle problems and try ideas. <a href="{{ link }}">Learn what is shared</a>.
+        {%- endtrans -%}
+      {% else %}
+        {{_('Firefox Developer Edition automatically sends feedback to Mozilla.')}}
+        <a href="{{ url('privacy.notices.firefox') + '#pre-release' }}">{{_('Learn more')}}</a>
+      {% endif %}
     </p>
   </div>
   <footer>
     <div class="container">
       <ul>
         <li><a href="{{ firefox_url('desktop', 'notes', 'developer') }}">{{_('Release Notes')}}</a></li>
-        <li><a href="{{ url('firefox.developer') }}">{{_('Learn more')}}</a></li>
-        <li><a href="{{ firefox_url('desktop', 'all', 'developer') }}">{{_('All Languages and Builds (incl. Win 64)')}}</a></li>
+        <li><a href="{{ url('firefox.developer.index') }}">{{_('Learn more')}}</a></li>
+        <li><a href="{{ firefox_url('desktop', 'all', 'developer') }}">{% if l10n_has_tag('firefox_channel_bug1387466') %}{{_('All Languages and Platforms')}}{% else %}{{_('All Languages and Builds')}}{% endif %}</a></li>
       </ul>
     </div>
   </footer>
@@ -95,8 +111,16 @@
     </header>
     {{ download_firefox('nightly', platform='desktop', force_direct=True, alt_copy=_('Download'), dom_id="desktop-nightly-download") }}
     <p class="notice">
-      {{_('Firefox Nightly automatically sends feedback to Mozilla.')}}
-      <a href="{{ url('privacy.notices.firefox') + '#telemetry' }}">{{_('Learn more')}}</a>
+      {% if l10n_has_tag('privacy_201806') %}
+        {%- trans link=url('privacy.notices.firefox') + '#pre-release' -%}
+          Nightly is an unstable testing and development platform. By default, Nightly sends data to Mozilla
+          — and sometimes our partners — to help us handle problems and try ideas.
+          <a href="{{ link }}">Learn what is shared</a>.
+        {%- endtrans -%}
+      {% else %}
+        {{_('Firefox Nightly automatically sends feedback to Mozilla.')}}
+        <a href="{{ url('privacy.notices.firefox') + '#pre-release' }}">{{_('Learn more')}}</a>
+      {% endif %}
     </p>
   </div>
   <footer>
@@ -104,7 +128,7 @@
       <ul>
         <li><a href="{{ firefox_url('desktop', 'notes', 'nightly') }}">{{_('Release Notes')}}</a></li>
         <li><a rel="external" href="https://blog.nightly.mozilla.org/">{{_('Nightly Blog')}}</a></li>
-        <li><a href="{{ firefox_url('desktop', 'all', 'nightly') }}">{{_('All Languages and Builds (incl. Win 64)')}}</a></li>
+        <li><a href="{{ firefox_url('desktop', 'all', 'nightly') }}">{% if l10n_has_tag('firefox_channel_bug1387466') %}{{_('All Languages and Platforms')}}{% else %}{{_('All Languages and Builds')}}{% endif %}</a></li>
       </ul>
     </div>
   </footer>

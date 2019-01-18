@@ -59,16 +59,6 @@ def get_lang_choices(newsletters=None):
     return sorted(lang_choices, key=itemgetter(1))
 
 
-def newsletter_title(newsletter):
-    """Given a newsletter's key, return its title if we can,
-    otherwise return the key
-    """
-    newsletters = utils.get_newsletters()
-    if newsletter in newsletters and 'title' in newsletters[newsletter]:
-        return newsletters[newsletter]['title']
-    return newsletter
-
-
 class UnlabeledTableCellRadios(widgets.RadioFieldRenderer):
     """Render radio buttons as table cells, without their labels"""
 
@@ -114,6 +104,21 @@ class TableCheckboxInput(widgets.CheckboxInput):
     def render(self, *args, **kwargs):
         out = super(TableCheckboxInput, self).render(*args, **kwargs)
         return mark_safe("<td>" + out + "</td>")
+
+
+class CountrySelectForm(forms.Form):
+    """
+    Form used on a page dedicated to allowing an existing subscriber to provide
+    us with their country so that we can include them in mailings relevant to
+    their area of the world.
+    """
+    country = forms.ChoiceField(choices=[])  # will set choices based on locale
+
+    def __init__(self, locale, *args, **kwargs):
+        regions = product_details.get_regions(locale)
+        regions = sorted(regions.iteritems(), key=itemgetter(1))
+        super(CountrySelectForm, self).__init__(*args, **kwargs)
+        self.fields['country'].choices = regions
 
 
 class ManageSubscriptionsForm(forms.Form):
@@ -231,7 +236,7 @@ class NewsletterFooterForm(forms.Form):
                             choices=FORMATS,
                             initial='H')
     privacy = forms.BooleanField(widget=PrivacyWidget)
-    source_url = forms.URLField(required=False)
+    source_url = forms.CharField(required=False)
     newsletters = forms.CharField(widget=forms.HiddenInput,
                                   required=True,
                                   max_length=100)
@@ -285,6 +290,14 @@ class NewsletterFooterForm(forms.Form):
 
     def clean_newsletters(self):
         return validate_newsletters(self.cleaned_data['newsletters'])
+
+    def clean_source_url(self):
+        su = self.cleaned_data['source_url'].strip()
+        if su:
+            # limit to 255 characters by truncation
+            return su[:255]
+
+        return su
 
 
 class EmailForm(forms.Form):

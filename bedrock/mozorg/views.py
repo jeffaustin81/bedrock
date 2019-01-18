@@ -2,31 +2,30 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import json
-from cgi import escape
+import re
 
-from django.contrib.staticfiles.finders import find as find_static
-from django.core.context_processors import csrf
-from django.core.mail import EmailMessage
-from django.http import HttpResponseRedirect, Http404
+from django.conf import settings
+from django.core.urlresolvers import reverse
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import render as django_render
-from django.template.loader import render_to_string
-from django.views.decorators.cache import cache_page
-from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.cache import cache_page, never_cache
 from django.views.decorators.http import require_safe
 from django.views.generic import TemplateView
 
 from commonware.decorators import xframe_allow
 
-from bedrock.base.templatetags.helpers import static
-from bedrock.base.urlresolvers import reverse
 from bedrock.base.waffle import switch
 from bedrock.mozorg.credits import CreditsFile
-from bedrock.mozorg.forms import (WebToLeadForm)
 from bedrock.mozorg.forums import ForumsFile
 from bedrock.mozorg.models import ContributorActivity, TwitterCache
-from bedrock.mozorg.util import HttpResponseJSON
+from bedrock.mozorg.util import (
+    fxa_concert_rsvp,
+    get_fxa_oauth_token,
+    get_fxa_profile_email,
+    HttpResponseJSON
+)
 from bedrock.newsletter.forms import NewsletterFooterForm
+from bedrock.pocketfeed.models import PocketArticle
 from bedrock.wordpress.views import BlogPostsView
 from lib import l10n_utils
 from lib.l10n_utils.dotlang import lang_file_is_active
@@ -34,9 +33,6 @@ from lib.l10n_utils.dotlang import lang_file_is_active
 credits_file = CreditsFile('credits')
 forums_file = ForumsFile('forums')
 
-PARTNERSHIPS_EMAIL_SUBJECT = 'New Partnership Inquiry'
-PARTNERSHIPS_EMAIL_TO = ['partnerships@mozilla.com']
-PARTNERSHIPS_EMAIL_FROM = 'Mozilla.com <noreply@mozilla.com>'
 TECH_BLOG_SLUGS = ['hacks', 'cd', 'futurereleases']
 
 
@@ -73,105 +69,12 @@ def contribute_embed(request):
                              'mozorg/contribute/contribute-embed.html')
 
 
-def process_partnership_form(request, template, success_url_name,
-                             template_vars=None, form_kwargs=None):
-    template_vars = template_vars or {}
-    form_kwargs = form_kwargs or {}
-
-    if request.method == 'POST':
-        form = WebToLeadForm(data=request.POST, **form_kwargs)
-
-        msg = 'Form invalid'
-        stat = 400
-        success = False
-
-        if form.is_valid():
-            data = form.cleaned_data.copy()
-
-            honeypot = data.pop('office_fax')
-
-            if honeypot:
-                msg = 'ok'
-                stat = 200
-            else:
-                # form testing address
-                if not data['email'] == 'success@example.com':
-                    data['lead_source'] = form_kwargs.get('lead_source',
-                                                          'www.mozilla.org/about/partnerships/')
-
-                    subject = PARTNERSHIPS_EMAIL_SUBJECT
-                    sender = PARTNERSHIPS_EMAIL_FROM
-                    to = PARTNERSHIPS_EMAIL_TO
-                    body = render_to_string('mozorg/emails/partnerships.txt', data,
-                                            request=request)
-
-                    email = EmailMessage(subject, body, sender, to)
-                    email.send()
-
-                msg = 'ok'
-                stat = 200
-                success = True
-
-        if request.is_ajax():
-            form_errors = {fn: [escape(msg) for msg in msgs] for fn, msgs
-                           in form.errors.iteritems()}
-
-            return HttpResponseJSON({'msg': msg, 'errors': form_errors}, status=stat)
-        # non-AJAX POST
-        else:
-            # if form is not valid, render template to retain form data/error messages
-            if not success:
-                template_vars.update(csrf(request))
-                template_vars['form'] = form
-                template_vars['form_success'] = success
-
-                return l10n_utils.render(request, template, template_vars)
-            # if form is valid, redirect to avoid refresh double post possibility
-            else:
-                return HttpResponseRedirect("%s?success" % (reverse(success_url_name)))
-    # no form POST - build form, add CSRF, & render template
-    else:
-        # without auto_id set, all id's get prefixed with 'id_'
-        form = WebToLeadForm(auto_id='%s', **form_kwargs)
-
-        template_vars.update(csrf(request))
-        template_vars['form'] = form
-        template_vars['form_success'] = True if ('success' in request.GET) else False
-
-        return l10n_utils.render(request, template, template_vars)
-
-
-@csrf_protect
-def partnerships(request):
-    return process_partnership_form(request, 'mozorg/partnerships.html', 'mozorg.partnerships')
-
-
 @xframe_allow
 def contribute_studentambassadors_landing(request):
     tweets = TwitterCache.objects.get_tweets_for('mozstudents')
     return l10n_utils.render(request,
                              'mozorg/contribute/studentambassadors/landing.html',
                              {'tweets': tweets})
-
-
-def holiday_calendars(request, template='mozorg/projects/holiday-calendars.html'):
-    """Generate the table of holiday calendars from JSON."""
-    calendars = []
-    json_file = find_static('caldata/calendars.json')
-    with open(json_file) as calendar_data:
-        calendars = json.load(calendar_data)
-
-    letters = set()
-    for calendar in calendars:
-        letters.add(calendar['country'][:1])
-
-    data = {
-        'calendars': sorted(calendars, key=lambda k: k['country']),
-        'letters': sorted(letters),
-        'CALDATA_URL': static('caldata/')
-    }
-
-    return l10n_utils.render(request, template, data)
 
 
 @require_safe
@@ -196,17 +99,6 @@ class Robots(TemplateView):
     def get_context_data(self, **kwargs):
         hostname = self.request.get_host()
         return {'disallow_all': not hostname == 'www.mozilla.org'}
-
-
-def home(request):
-    locale = l10n_utils.get_locale(request)
-
-    if locale == 'en-US' and switch('experiment-home-q32017'):
-        template = 'mozorg/home/home-b.html'
-    else:
-        template = 'mozorg/home/home.html'
-
-    return l10n_utils.render(request, template)
 
 
 NAMESPACES = {
@@ -298,12 +190,116 @@ class DeveloperView(BlogPostsView):
     blog_posts_template_variable = 'articles'
 
 
-def plugincheck(request):
+def home_view(request):
+    locale = l10n_utils.get_locale(request)
+    donate_params = settings.DONATE_PARAMS.get(
+        locale, settings.DONATE_PARAMS['en-US'])
+
+    # presets are stored as a string but, for the home banner
+    # we need it as a list.
+    donate_params['preset_list'] = donate_params['presets'].split(',')
+
+    if locale.startswith('en-'):
+        template_name = 'mozorg/home/home-en.html'
+
+    else:
+        template_name = 'mozorg/home/home.html'
+
+    return l10n_utils.render(request, template_name, {
+        'donate_params': donate_params,
+        'pocket_articles': PocketArticle.objects.all()[:4]
+    })
+
+
+def about_view(request):
     locale = l10n_utils.get_locale(request)
 
-    if lang_file_is_active('mozorg/plugincheck-update', locale):
-        template = 'mozorg/plugincheck-update.html'
+    if locale.startswith('en-'):
+        template_name = 'mozorg/about-en.html'
     else:
-        template = 'mozorg/plugincheck.html'
+        template_name = 'mozorg/about.html'
 
-    return l10n_utils.render(request, template)
+    return l10n_utils.render(request, template_name)
+
+
+def moss_view(request):
+    locale = l10n_utils.get_locale(request)
+
+    if lang_file_is_active('mozorg/moss/index-092018', locale):
+        template_name = 'mozorg/moss/index-092018.html'
+    else:
+        template_name = 'mozorg/moss/index.html'
+
+    return l10n_utils.render(request, template_name)
+
+
+@never_cache
+def oauth_fxa(request):
+    """
+    Acts as an OAuth relier for Firefox Accounts. Currently specifically tuned to handle
+    the OAuth flow for the Firefox Concert Series (Q4 2018).
+
+    If additional OAuth flows are required in the future, please refactor this method.
+    """
+    if not switch('firefox_concert_series'):
+        return HttpResponseRedirect(reverse('mozorg.home'))
+
+    # expected state should be in user's cookies
+    stateExpected = request.COOKIES.get('fxaOauthState', None)
+
+    # provided state passed back from FxA - these state values should match
+    stateProvided = request.GET.get('state', None)
+
+    # code must be present - is in redirect querystring from FxA
+    code = request.GET.get('code', None)
+
+    error = False
+    cookie_age = 86400  # 1 day
+
+    # ensure all the data we need is present and valid
+    if not (stateExpected and stateProvided and code):
+        error = True
+    elif stateExpected != stateProvided:
+        error = True
+    else:
+        token = get_fxa_oauth_token(code)
+
+        if not token:
+            error = True
+        else:
+            email = get_fxa_profile_email(token)
+
+            if not email:
+                error = True
+            else:
+                # add email to mailing list
+
+                # check for Firefox
+                include_re = re.compile(r'\bFirefox\b', flags=re.I)
+                exclude_re = re.compile(r'\b(Camino|Iceweasel|SeaMonkey)\b', flags=re.I)
+
+                value = request.META.get('HTTP_USER_AGENT', '')
+                isFx = bool(include_re.search(value) and not exclude_re.search(value))
+
+                # add user to mailing list for future concert updates
+                rsvp_ok = fxa_concert_rsvp(email, isFx)
+
+                if not rsvp_ok:
+                    error = True
+
+    if error:
+        # send user to a custom error page
+        response = HttpResponseRedirect(reverse('mozorg.oauth.fxa-error'))
+    else:
+        # send user back to the concerts page
+        response = HttpResponseRedirect(reverse('firefox.concerts'))
+        response.set_cookie('fxaOauthVerified', True, max_age=cookie_age, httponly=False)
+
+    return response
+
+
+def oauth_fxa_error(request):
+    if switch('firefox_concert_series'):
+        return l10n_utils.render(request, 'mozorg/oauth/fxa-error.html')
+    else:
+        return HttpResponseRedirect(reverse('mozorg.home'))

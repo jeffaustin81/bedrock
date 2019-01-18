@@ -7,6 +7,7 @@
 #colophon {
     @include open-sans;
     background: #000;
+    clear: both;
     color: #fff;
     line-height: 1.3;
     margin: 0;
@@ -138,16 +139,26 @@
     }
 
     .lang-switcher {
-        font-weight: bold;
 
-        label {
+        label,
+        .mzp-c-cta-link {
             display: inline-block;
+            font-weight: bold;
             margin: 0 20px 5px 0;
+        }
+
+        // hide the <label> visually should a language link be shown instead.
+        .mzp-c-cta-link + label {
+            @include visually-hidden;
         }
 
         select {
             border: none;
             background: #ededed;
+        }
+
+        .js & button {
+            display: none;
         }
     }
 
@@ -192,8 +203,11 @@
         }
     }
 
-    .lang-switcher label {
-        margin: 0 0 5px 20px;
+    .lang-switcher {
+        label,
+        .mzp-c-cta-link {
+            margin: 0 0 5px 20px;
+        }
     }
 
     .social-links li {

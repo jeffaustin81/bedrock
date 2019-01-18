@@ -16,16 +16,16 @@
 {% block body_attrs %}{{ super() }} data-global-nav-current-link="internet-health"{% endblock %}
 
 {% block page_css %}
-  {% stylesheet 'health-subpage' %}
+  {{ css_bundle('health-subpage') }}
 
   {% if switch('data-privacy-day-2017') %}
-    {% stylesheet 'privacy-day-egg' %}
+    {{ css_bundle('privacy-day-egg') }}
   {% endif %}
 {% endblock %}
 
 {% block site_header %}
   {% if LANG.startswith('en-') %}
-    {% include 'includes/global-nav.html' %}
+    {% include 'includes/protocol/navigation/index.html' %}
   {% else %}
     {% set logo_src = static('img/pebbles/moz-wordmark-dark-reverse.svg') %}
     {% include 'mozorg/home/includes/nav.html' %}
@@ -33,7 +33,9 @@
 {% endblock %}
 
 {% block content %}
-{% include 'mozorg/internet-health/includes/sub-nav.html' %}
+{% with current='privacy' %}
+  {% include 'mozorg/internet-health/includes/sub-nav.html' %}
+{% endwith %}
 
 <main role="main">
   <header class="section main-header">
@@ -203,7 +205,7 @@
               <h4>{{ _('Educating the industry') }}</h4>
             {% endif %}
               <p>
-              {% trans leandata=url('mozorg.about.policy.lean-data') + '?control' %}
+              {% trans leandata=url('mozorg.about.policy.lean-data.index') + '?control' %}
                 Encouraging and educating the industry about
                 <a href="{{ leandata }}">lean data practices</a>.
               {% endtrans %}
@@ -313,7 +315,7 @@
               <h4>{{ _('Educating the industry') }}</h4>
             {% endif %}
               <p>
-              {% trans leandata=url('mozorg.about.policy.lean-data') %}
+              {% trans leandata=url('mozorg.about.policy.lean-data.index') %}
                 Educating the industry about <a href="{{ leandata }}">lean data practices</a>.
               {% endtrans %}
               </p>
@@ -452,9 +454,13 @@
       <h2>{{ _('Hungry for more?') }}</h2>
       <p class="report-cta">
         <span>
-        {% trans healthreport='https://internethealthreport.org' %}
-          Keep reading about Privacy and Security in our <a href="{{ healthreport }}">Internet Health Report</a>.
-        {% endtrans %}
+        {% if LANG.startswith('en-') %}
+          Keep reading in our <a href="https://internethealthreport.org">Internet Health Report</a> or <a href="https://assets.mozilla.net/pdf/IHPbriefs_Online_Privacy_March_2017.pdf" data-link-type="document-download" data-link-name="IH Brief:privacy-security">Online Privacy and Security brief (PDF)</a>.
+        {% else %}
+          {% trans healthreport='https://internethealthreport.org' %}
+            Keep reading about Privacy and Security in our <a href="{{ healthreport }}">Internet Health Report</a>.
+          {% endtrans %}
+        {% endif %}
         </span>
       </p>
     </div>
@@ -499,8 +505,8 @@
 {% block email_form %}{% endblock %}
 
 {% block js %}
-  {% javascript 'internet-health-subpage' %}
+  {{ js_bundle('internet-health-subpage') }}
   {% if switch('data-privacy-day-2017') %}
-    {% javascript 'privacy-day-egg' %}
+    {{ js_bundle('privacy-day-egg') }}
   {% endif %}
 {% endblock %}

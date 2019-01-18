@@ -1,67 +1,40 @@
 /* For reference read the Jasmine and Sinon docs
- * Jasmine docs: http://pivotal.github.io/jasmine/
+ * Jasmine docs: https://jasmine.github.io/2.4/introduction
  * Sinon docs: http://sinonjs.org/docs/
  */
 
-/* global describe, beforeEach, afterEach, it, expect, sinon, spyOn */
+/* global describe, beforeEach, afterEach, it, expect, spyOn */
 
 describe('mozilla-utils.js', function() {
 
     'use strict';
 
-    describe('triggerIEDownload', function () {
+    describe('switchPathLanguage', function () {
+        var location = {};
 
-        beforeEach(function() {
-            window.site.platform = 'windows';
+        it('should return the same URL with a different language prefix', function () {
+            location.pathname = '/en-US/firefox/new/';
+            location.search = '';
+            expect(Mozilla.Utils.switchPathLanguage(location, 'de')).toEqual('/de/firefox/new/');
+
+            location.pathname = '/fr/firefox/';
+            expect(Mozilla.Utils.switchPathLanguage(location, 'zh-TW')).toEqual('/zh-TW/firefox/');
+
+            location.pathname = '/de/';
+            expect(Mozilla.Utils.switchPathLanguage(location, 'fr')).toEqual('/fr/');
         });
 
-        afterEach(function() {
-            window.site.platform = 'other';
+        it('should return the same URL with a different language prefix and include the query string', function () {
+            location.pathname = '/en-US/firefox/new/';
+            location.search = '?dude=abide';
+            expect(Mozilla.Utils.switchPathLanguage(location, 'de')).toEqual('/de/firefox/new/?dude=abide');
+
+            location.pathname = '/fr/firefox/';
+            expect(Mozilla.Utils.switchPathLanguage(location, 'zh-TW')).toEqual('/zh-TW/firefox/?dude=abide');
+
+            location.pathname = '/de/';
+            expect(Mozilla.Utils.switchPathLanguage(location, 'fr')).toEqual('/fr/?dude=abide');
         });
-
-        it('should open a popup for IE < 9', function () {
-            var userAgent = 'Mozilla/5.0 (compatible; MSIE 8.0; Windows NT 6.1; Trident/4.0; GTB7.4; InfoPath.2; SV1; .NET CLR 3.3.69573; WOW64; en-US)';
-            window.open = sinon.stub();
-            Mozilla.Utils.triggerIEDownload('foo', userAgent);
-            expect(window.open.called).toBeTruthy();
-        });
-
-        it('should not open a popup for IE 9', function () {
-            var userAgent = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 7.1; Trident/5.0)';
-            window.open = sinon.stub();
-            Mozilla.Utils.triggerIEDownload('foo', userAgent);
-            expect(window.open.called).not.toBeTruthy();
-        });
-
-        it('should not open a popup for other browsers', function () {
-            var userAgent = 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36';
-            window.open = sinon.stub();
-            Mozilla.Utils.triggerIEDownload('foo', userAgent);
-            expect(window.open.called).not.toBeTruthy();
-        });
-
-    });
-
-    describe('initDownloadLinks', function () {
-
-        /* Append an HTML fixture to the document body
-         * for each test in the scope of this suite */
-        beforeEach(function () {
-            $('<a class="download-link" data-direct-link="bar">foo</a>').appendTo('body');
-        });
-
-        /* Then after each test remove the fixture */
-        afterEach(function() {
-            $('.download-link').remove();
-        });
-
-        it('should call triggerIEDownload when clicked', function () {
-            spyOn(Mozilla.Utils, 'triggerIEDownload');
-            Mozilla.Utils.initDownloadLinks();
-            $('.download-link').trigger('click');
-            expect(Mozilla.Utils.triggerIEDownload).toHaveBeenCalled();
-        });
-
     });
 
     describe('initMobileDownloadLinks', function () {
@@ -79,14 +52,6 @@ describe('mozilla-utils.js', function() {
             Mozilla.Utils.initMobileDownloadLinks();
             expect($link.attr('href')).toEqual('market://details?id=org.mozilla.firefox');
         });
-
-        it('should set a URL with the itms-apps scheme on iOS', function () {
-            window.site.platform = 'ios';
-            $link = $('<a class="download-link" href="https://itunes.apple.com/us/app/apple-store/id989804926?mt=8">foo</a>').appendTo('body');
-            Mozilla.Utils.initMobileDownloadLinks();
-            expect($link.attr('href')).toEqual('itms-apps://itunes.apple.com/us/app/apple-store/id989804926?mt=8');
-        });
-
     });
 
     describe('maybeSwitchToDistDownloadLinks', function() {

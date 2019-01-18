@@ -12,13 +12,17 @@ if (typeof Mozilla.Analytics == 'undefined') {
 
 (function() {
     var analytics = Mozilla.Analytics;
+    var isModernBrowser = 'querySelector' in document && 'querySelectorAll' in document;
 
     /** Returns whether page has download button.
     * @param {String} path - URL path name fallback if page ID does not exist.
     * @return {String} string.
     */
     analytics.pageHasDownload = function() {
-        return $('[data-download-os]').length ? 'true' : 'false';
+        if (!isModernBrowser) {
+            return 'false';
+        }
+        return document.querySelector('[data-download-os]') !== null ? 'true' : 'false';
     };
 
     /** Returns whether page has video.
@@ -26,7 +30,10 @@ if (typeof Mozilla.Analytics == 'undefined') {
     * @return {String} string.
     */
     analytics.pageHasVideo = function() {
-        return ($('video').length || $('iframe[src^="https://www.youtube"]').length) ? 'true' : 'false';
+        if (!isModernBrowser) {
+            return 'false';
+        }
+        return (document.querySelector('video') !== null || document.querySelector('iframe[src^="https://www.youtube"]') !== null) ? 'true' : 'false';
     };
 
     /** Returns page version.
@@ -44,7 +51,95 @@ if (typeof Mozilla.Analytics == 'undefined') {
     * @return {String} latest Fx version.
     */
     analytics.getLatestFxVersion = function() {
-        return $('html').data('latest-firefox');
+        return document.getElementsByTagName('html')[0].getAttribute('data-latest-firefox');
+    };
+
+    /** Returns an object containing GA-formatted FxA details
+    * The specs for this are a combination of:
+    * - https://bugzilla.mozilla.org/show_bug.cgi?id=1457024#c33
+    * - https://bugzilla.mozilla.org/show_bug.cgi?id=1457004#c22
+    * Our implmentation it might deviate from the spec where there was conflicting info in the spec.
+    *
+    * Data arrives from Client.getFxaDetails as an object, see getFxaDetails for details.
+    *
+    * @param {Object} FxaDetails - object of FxA details returned by getFxaDetails
+    * @return {Object} FxA details formatted for GA
+    */
+    analytics.formatFxaDetails = function(FxaDetails) {
+        // start with empty object
+        var formatted = {};
+
+        if (FxaDetails.firefox === true) {
+            // only add FxA account details if this is Fx, otherwise their segment is just 'Not Firefox'
+            if (FxaDetails.mobile) {
+                // Firefox Mobile
+                formatted.FxASegment = 'Firefox Mobile';
+            } else {
+                // Firefox Desktop
+                if (FxaDetails.setup) {
+                    // set FxALogin
+                    formatted.FxALogin = true;
+                    // set FxASegment with default value, to be refined
+                    formatted.FxASegment = 'Logged in';
+                    // Change FxASegment to Legacy if this is an old browser
+                    if (FxaDetails.legacy === true) {
+                        formatted.FxASegment = 'Legacy Firefox';
+                    }
+
+                    // variables to compare to determine the segments
+                    var mobileSync = false;
+                    var desktopSync = false;
+                    var desktopMultiSync = false;
+
+                    // set FxAMobileSync
+                    if (FxaDetails.mobileDevices > 0) {
+                        formatted.FxAMobileSync = true;
+                        mobileSync = true;
+                    } else if (FxaDetails.mobileDevices === 0) {
+                        formatted.FxAMobileSync = false;
+                    } else {
+                        formatted.FxAMobileSync = 'unknown';
+                    }
+
+                    // set FxAMultiDesktopSync
+                    if (FxaDetails.desktopDevices > 1) {
+                        formatted.FxAMultiDesktopSync = true;
+                        desktopMultiSync = true;
+                    } else if (FxaDetails.desktopDevices === 1) {
+                        formatted.FxAMultiDesktopSync = false;
+                        desktopSync = true;
+                    } else if (FxaDetails.desktopDevices === 0){
+                        formatted.FxAMultiDesktopSync = false;
+                    } else {
+                        formatted.FxAMultiDesktopSync = 'unknown';
+                    }
+
+                    // refine FxASegment based on device syncing
+                    if (desktopMultiSync && mobileSync) {
+                        formatted.FxASegment = 'Multi-Desktop and Mobile Sync';
+                    } else if (desktopSync && mobileSync) {
+                        formatted.FxASegment = 'Desktop and Mobile Sync';
+                    } else if (desktopMultiSync) {
+                        formatted.FxASegment = 'Multi-Desktop Sync';
+                    }
+
+                } else {
+                    // Not logged into FxA
+                    if (FxaDetails.legacy === true) {
+                        // too old to support UITour or FxA, or pre FxASegment and logged out
+                        formatted.FxASegment = 'Legacy Firefox';
+                        formatted.FxALogin = 'unknown';
+                    } else {
+                        // not too old, just logged out
+                        formatted.FxASegment = 'Not logged in';
+                        formatted.FxALogin = false;
+                    }
+                }
+            }
+        } else {
+            formatted.FxASegment = 'Not Firefox';
+        }
+        return formatted;
     };
 
     /** Monkey patch for dataLayer.push

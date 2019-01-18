@@ -2,13 +2,37 @@
  # License, v. 2.0. If a copy of the MPL was not distributed with this
  # file, You can obtain one at http://mozilla.org/MPL/2.0/. -#}
 
-{% macro lazy_image(image_url, placeholder_url) -%}
-<div class="lazy-image-container">
-  <img src="{{ static(placeholder_url) }}" data-src="{{ static(image_url) }}" alt="">
-  <noscript>
-    <img src="{{ static(image_url) }}" alt="">
-  </noscript>
-</div>
+{# side_nav_lists() takes a list of lists and makes nav menus
+  The list has the link, a body_id, and a the text to display
+  {% set navigation_bar_client_bounty = [
+      (url('security.client-bug-bounty'),'client-bug-bounty', 'Client Bug Bounty'),
+      (url('security.bug-bounty.faq'), 'faq', 'Frequently Asked Questions'),
+  ] %}
+
+  {% set navigation_bar_web_bounty = [
+      (url('security.web-bug-bounty'), 'web-bug-bounty', 'Web Bug Bounty'),
+      (url('security.bug-bounty.web-eligible-sites'), 'web-eligible-sites', 'Eligible Websites'),
+  ] %}
+
+  {{ side_nav_lists([navigation_bar_client_bounty, navigation_bar_web_bounty]) }}
+#}
+
+{% macro side_nav_lists(arr, body_id='') -%}
+  {% for menu in arr %}
+    <nav class="side-nav">
+      <ul>
+      {% for href, id, caption in menu %}
+        <li>
+        {% if id == body_id and body_id != '' %}
+          <b>{{ caption|e }}</b>
+        {% else %}
+          <a href="{{ href|e }}">{{ caption|e }}</a>
+        {% endif %}
+        </li>
+      {% endfor %}
+      </ul>
+    </nav>
+  {% endfor %}
 {%- endmacro %}
 
 {% macro facebook_share_url(url) -%}
@@ -106,169 +130,16 @@
 </aside>
 {%- endmacro %}
 
-{% macro fxfamilynav(activenav, navclass) %}
-{#
-1. Add to page:
-  a. Include this macro:
-    {% from "macros.html" import fxfamilynav with context %}
-
-  b. Remove old site_header:
-
-    {% block site_header %}{% endblock %}
-
-  c. Add site_header_unwrapped block, including this macro and specifying the
-    active nav item:
-
-    {% block site_header_unwrapped %}
-      {{ fxfamilynav('android') }}
-    {% endblock %}
-
-    If you need the dark text version (like for /firefox/desktop), pass
-    in the 'dark' argument:
-
-    {% block site_header_unwrapped %}
-      {{ fxfamilynav('desktop', 'dark') }}
-    {% endblock %}
-
-    Available nav ID values:
-
-    - desktop
-    - android
-    - ios
-    - features
-
-    If you need a CTA in the sticky nav, call the macro and include
-    the CTA element:
-
-    {% block site_header_unwrapped %}
-      {% call fxfamilynav('desktop') %}
-        <a href="{{ url('firefox.new') }}">Download Firefox</a>
-      {% endcall %}
-    {% endblock %}
-
-
-2. Make sure necessary files are in your CSS/JS bundles:
-  a. CSS
-    'css/firefox/family-nav.less'
-
-  b. JS
-    'js/libs/jquery.waypoints.min.js',
-    'js/libs/jquery.waypoints-sticky.min.js',
-    'js/firefox/family-nav.js',
-
-  c. IE 9
-    IE 9 requires the matchMedia.addListener polyfill. If your page doesn't
-    already have a specific IE 9 bundle, you can use the generic one:
-
-    <!--[if IE 9]>
-    {% javascript 'matchmedia_addlistener' %}
-    <![endif]-->
-
-
-
-  ## Notes on CTA:
-
-  CTA in sticky nav max dimensions are 160px w x 60px h. Anything over will be
-  cut off. Conform or feel the wrath of chopped off edges.
-
-  CTA is hidden in sticky nav at tablet (760px) breakpoint (not enough
-  real-estate).
-
-  CTA is purposefully hidden for mobile.
-
-
-  ## Notes on tabzilla wordmark
-
-  By default, wordmark is transparent, which works for most pages. If you need to set
-  the color behind the transparent wordmark, just include CSS like the following on
-  your specific page:
-
-  .fxfamilynav-tabzilla:before {
-    background-color: #e840c0;
-  }
-#}
-
-<header id="fxfamilynav-header" class="fxfamilynav-header{% if (navclass) %} {{ navclass }}{% endif %}">
-  <div class="container">
-    <a href="{{ url('firefox') }}" class="fxfamilynav-logo">{{ _('Firefox') }}</a>
-    <nav id="fxfamilynav" class="fxfamilynav" role="navigation">
-      <ul id="fxfamilynav-primary" class="primary-nav">
-        <li{% if activenav == 'firefox' %} class="active"{% endif %} id="fxfamilynav-home-link">
-          <a data-id="firefox" href="{{ url('firefox') }}" class="primary-link" data-link-type="nav" data-link-name="Firefox"><div>{{ _('Firefox') }}</div></a>
-        </li>
-        <li{% if activenav == 'desktop' %} class="active"{% endif %}>
-          <a data-id="desktop" href="{{ url('firefox.desktop.index') }}" class="primary-link" data-link-type="nav" data-link-name="for Desktop"><div>{{ _('Desktop') }}</div></a>
-        </li>
-        <li{% if activenav == 'android' %} class="active"{% endif %}>
-          <a data-id="android" href="{{ url('firefox.android.index') }}" class="primary-link" data-link-type="nav" data-link-name="for Android"><div>{{ _('Android') }}</div></a>
-        </li>
-        <li{% if activenav == 'ios' %} class="active"{% endif %}>
-          <a data-id="ios" href="{{ url('firefox.ios') }}" class="primary-link" data-link-type="nav" data-link-name="for iOS"><div>{{ _('iOS') }}</div></a>
-        </li>
-        <li class="related{% if activenav == 'features' %} active{% endif %}">
-          <a data-id="features" href="{{ url('firefox.features.index') }}" class="primary-link" data-link-type="nav" data-link-name="Features"><div>{{ _('Features') }}</div></a>
-        </li>
-      </ul>
-    </nav>{#-- /#fxfamilynav --#}
-
-    <div id="fxfamilynav-adjunctnav" class="fxfamilynav-adjunctnav">
-      {# the triangle needs a border, so :before content doesn't cut it #}
-      <div class="triangle"></div>
-      <div class="triangle-border"></div>
-
-      <ul class="adjunctnav{% if activenav == 'desktop' %} active{% endif %}">
-        <li><a href="{{ url('firefox.channel.desktop') }}" data-link-type="nav" data-link-name="Side Menu: Pre-release downloads">{{ _('Pre-release downloads') }}</a>
-        <li><a href="{{ url('firefox.dnt') }}" data-link-type="nav" data-link-name="Side Menu: Do Not Track">{{ _('Do Not Track') }}</a></li>
-        <li><a href="{{ url('firefox.interest-dashboard') }}" data-link-type="nav" data-link-name="Side Menu: Interest Dashboard">{{ _('Interest Dashboard') }}</a></li>
-        <li><a href="{{ url('firefox.features.private-browsing') }}" data-link-type="nav" data-link-name="Side Menu: Private Browsing">{{ _('Private Browsing') }}</a></li>
-        <li><a rel="external" href="https://addons.mozilla.org" data-link-type="nav" data-link-name="Side Menu: Add-ons">{{ _('Add-ons') }}</a></li>
-        <li><a rel="external" href="https://support.mozilla.org/products/firefox" data-link-type="nav" data-link-name="Side Menu: Need help?">{{ _('Need help?') }}</a></li>
-      </ul>
-
-      <ul class="adjunctnav{% if activenav == 'android' %} active{% endif %}">
-        <li><a href="{{ url('firefox.channel.android') }}" data-link-type="nav" data-link-name="Side Menu: Pre-release downloads">{{ _('Pre-release downloads') }}</a>
-        <li><a href="{{ url('firefox.dnt') }}" data-link-type="nav" data-link-name="Side Menu: Do Not Track">{{ _('Do Not Track') }}</a></li>
-        <li><a rel="external" href="https://www.youtube.com/watch?v=Ewk0YtFTBec&amp;list=PLA8ABF6B7A66A0C5E&amp;index=15" data-link-type="nav" data-link-name="Side Menu: Private Browsing">{{ _('Private Browsing') }}</a></li>
-        <li><a rel="external" href="https://addons.mozilla.org/android/" data-link-type="nav" data-link-name="Side Menu: Android Add-ons">{{ _('Add-ons') }}</a></li>
-        <li><a rel="external" href="https://support.mozilla.org/products/mobile" data-link-type="nav" data-link-name="Side Menu: Need help?">{{ _('Need help?') }}</a></li>
-      </ul>
-
-      <ul class="adjunctnav{% if activenav == 'ios' %} active{% endif %}">
-        <li><a href="{{ url('firefox.channel.ios') }}" data-link-type="nav" data-link-name="Side Menu: Pre-release downloads">{{ _('Pre-release downloads') }}</a>
-        <li><a rel="external" href="https://support.mozilla.org/products/ios" data-link-type="nav" data-link-name="Side Menu: Need help?">{{ _('Need help?') }}</a></li>
-      </ul>
-    </div>{#-- /#fxfamilynav-adjunctnav --#}
-
-    {# Page will dictate CTA (button, usually) to be placed in this wrapper #}
-    <div id="fxfamilynav-cta-wrapper" class="fxfamilynav-cta-wrapper">{% if caller %}{{ caller() }}{% endif %}</div>
-
-    {# Features & Firefox nav items do not (yet?) have an adjunct nav #}
-    {% if activenav not in ('features', 'firefox') %}
-    <button type="button" id="fxfamilynav-adjunctnav-trigger" class="fxfamilynav-adjunctnav-trigger" aria-controls="fxfamilynav-adjunctnav">
-      <span>{{ _('Menu') }}</span>
-      <div class="trigger-dots">
-        <div class="trigger-dot"></div>
-        <div class="trigger-dot"></div>
-        <div class="trigger-dot"></div>
-      </div>
-    </button>
-    {% endif %}
-
-    <div id="tabzilla">
-      <a href="{{ url('mozorg.home') }}" data-link-type="nav" data-link-name="tabzilla">Mozilla</a>
-    </div>
-  </div>{#-- /.container --#}
-</header>{#-- /#fxfamilynav-header --#}
-{%- endmacro %}
-
-{% macro google_play_button(alt_href='', anchor_attributes={}, class_name='', extra_img_attributes={}, id='') -%}
+{% macro google_play_button(class_name='', extra_data_attributes={}, extra_img_attributes={}, href=settings.GOOGLE_PLAY_FIREFOX_LINK, id='', product='Firefox', target='') -%}
 {% set optional_img_attributes = {'alt': _('Get it on Google Play'), 'width': '152', 'height': '45', 'l10n': True} %}
 {% do optional_img_attributes.update(extra_img_attributes) %}
-<a{% if class_name %} class="{{ class_name }}"{% endif %}{% if id %} id="{{ id }}"{% endif %} rel="external noopener noreferrer" href="{{ alt_href|default(settings.GOOGLE_PLAY_FIREFOX_LINK, True) }}"{% if not alt_href %} data-link-type="download" data-download-os="Android" data-mozillaonline-link="{{ settings.GOOGLE_PLAY_FIREFOX_LINK_MOZILLAONLINE }}"{% endif %}{% for attr, val in anchor_attributes.items() %} {{ attr }}="{{ val }}"{% endfor %}>
+<a{% if class_name %} class="{{ class_name }}"{% endif %}{% if id %} id="{{ id }}"{% endif %}{% if target %} target="{{ target }}" rel="external noopener noreferrer"{% else %} rel="external"{% endif %} href="{{ href }}"{% if product in ['Firefox', 'Focus'] %} data-link-type="download" data-download-os="Android"{% endif %}{% if product == 'Firefox' %} data-mozillaonline-link="{{ settings.GOOGLE_PLAY_FIREFOX_LINK_MOZILLAONLINE }}"{% endif %}{% for attr, val in extra_data_attributes.items() %} data-{{ attr }}="{{ val }}"{% endfor %}>
   {{ high_res_img('firefox/android/btn-google-play.png', optional_img_attributes) }}
 </a>
 {%- endmacro %}
 
+
+{# send_to_device macro is being deprecated in favor of the send_yourself macro below. #}
 {% macro send_to_device(platform, include_title=True, title_text='', include_logo=False, ios_link='', spinner_color='', message_set='default') %}
   {# If no App Store link is specified, use base with default "ct" param value #}
   {# See https://bugzilla.mozilla.org/show_bug.cgi?id=1196310#c23 #}
@@ -276,7 +147,7 @@
     {% set ios_link = firefox_ios_url('mozorg') %}
   {% endif %}
   {% set android_link = settings.GOOGLE_PLAY_FIREFOX_LINK %}
-  <section id="send-to-device" class="{% if include_logo %}logo {% endif %}{% if include_title %}title{% else %}no-title{% endif %}" data-countries="{{ send_to_device_countries() }}"{% if spinner_color %} data-spinner-color="{{ spinner_color }}"{% endif %}>
+  <section id="send-to-device" class="{% if include_logo %}logo {% endif %}{% if include_title %}title{% else %}no-title{% endif %}" data-countries="{{ send_to_device_sms_countries(message_set) }}"{% if spinner_color %} data-spinner-color="{{ spinner_color }}"{% endif %}>
     <div class="form-container">
       {% if include_title %}
         <h2 class="form-heading">
@@ -366,4 +237,223 @@
       </ul>
     </footer>
   </section>
+{%- endmacro %}
+
+{# The send_yourself macro refactors and replaces the send_to_device macro above.
+   This version better supports multiple products and avoids duplicate IDs so more than one widget can be embedded in a page. #}
+{% macro send_yourself(include_title=True, title_text='', spinner_color='', message_set='default', id='send-yourself', product='firefox') %}
+  <section id="{{ id }}" class="mzp-c-sendyourself {% if include_title %}mzp-has-title{% endif %}" data-countries="{{ send_to_device_sms_countries(message_set) }}"{% if spinner_color %} data-spinner-color="{{ spinner_color }}"{% endif %}>
+    <div class="mzp-c-sendyourself-container">
+      {% if include_title %}
+        <h3 class="mzp-c-sendyourself-title">
+        {% if title_text %}
+          {{ title_text }}
+        {% else %}
+          {{ _('Send Firefox to your smartphone or tablet') }}
+        {% endif %}
+        </h3>
+      {% endif %}
+      <form id="{{ id }}-form" class="mzp-c-sendyourself-form" action="{{ url('firefox.send-to-device-post') }}" method="post">
+        <ul class="mzp-c-form-errors mzp-u-hidden">
+          <li class="mzp-js-error-sms">{{ _('Sorry, we can’t send SMS messages to this phone number.') }}</li>
+          <li class="mzp-js-error-email">{{ _('Please enter an email address.') }}</li>
+          <li class="mzp-js-error-system">{{ _('An error occurred in our system. Please try again later.') }}</li>
+        </ul>
+        <div class="mzp-u-hidden">
+          <input type="hidden" name="product" value="{{ product }}">
+          <input type="hidden" name="source-url" value="{{ request.build_absolute_uri(request.path) }}">
+          <input type="hidden" name="message-set" value="{{ message_set }}">
+        </div>
+        <div class="mzp-c-sendyourself-formfields">
+          <p class="mzp-c-sendyourself-field">
+            <label for="{{ id }}-input" class="mzp-js-input-label" data-alt="{{ _('Enter your email or phone number') }}">{{ _('Enter your email') }}</label>
+            <input id="{{ id }}-input" class="mzp-c-sendyourself-input" name="phone-or-email" type="text" required>
+            <button type="submit" class="mzp-c-button">{{ _('Send') }}</button>
+          </p>
+          <p class="mzp-c-sendyourself-note mzp-is-sms">
+            {{ _('SMS service available in select countries only. SMS &amp; data rates may apply.') }}
+            {{ _('The intended recipient of the email or SMS must have consented.') }} <a href="{{ url('privacy.notices.websites') }}#campaigns">{{ _('Learn more') }}</a>
+          </p>
+          <p class="mzp-c-sendyourself-note mzp-is-email">
+            {{ _('The intended recipient of the email must have consented.') }} <a href="{{ url('privacy.notices.websites') }}#campaigns">{{ _('Learn more') }}</a>
+          </p>
+        </div>
+        <div class="mzp-c-sendyourself-thanks mzp-u-hidden">
+          <h3>{{ _('Your download link was sent.') }}</h3>
+          <p class="mzp-is-sms">{{ _('Check your device for the email or text message!') }}</p>
+          <p class="mzp-is-email">{{ _('Check your device for the email!') }}</p>
+          <button class="button button-hollow button-light mzp-js-send-another" type="button">{{ _('Send to another device') }}</button>
+        </div>
+        <div class="mzp-js-loading-spinner mzp-u-hidden"></div>
+      </form>
+    </div>
+  </section>
+{%- endmacro %}
+
+{% macro fxa_create_account_button(button_location, id_prefix, campaign, entrypoint, button_text = '', button_class = '', content = '', source = '') %}
+  {# - creates the "create account" button which links to accounts.firefox.com
+       and fallback states including:
+       - already logged in, not firefox, legacy firefox, Android Firefox, iOS Firefox
+       - use with media/js/base/mozilla-fxa.js and media/css/pebbles/components/_fxa.scss
+     - button_location and id_prefix are required
+       - button_location is for `data-download-location` which is for analytics
+          - examples: 'primary cta', 'footer cta'
+       - id_prefix is combined with some sufixes to create unique IDs for all buttons and links
+         - example: 'features-header'
+     - button_text is the text label that appears on the button. Defaults to "Create account" if blank.
+     - button_class is a class name(s) appended after the 'button' class, for styling or other purposes. Defaults to 'button-hollow' if blank.
+     - campaign is for utm_campaign on the Fxa and fallback links
+     - entrypoint is for the fxa team, it indicates where the user came from
+       - the prefix `mozilla.org:` will be appended to it
+       - example: 'fxa.features'
+       - when in doubt ask the fxa team to recommend a value
+     - content is for utm_content param
+       - content will default to the path to the page, minus the locale
+  #}
+  {# Parameters for accounts.firefox.com link #}
+  {% set service = 'sync' %}
+  {% set context = 'fx_desktop_v3' %}
+  {% set entrypoint = 'mozilla.org-' + entrypoint %}
+  {% if not button_text %}
+    {% set button_text = _('Create account') %}
+  {% endif %}
+  {% if not button_class %}
+    {% set button_class = 'button-hollow' %}
+  {% endif %}
+  {% if content %}
+    {% set utm_content = content.replace('/', '%2F') %}
+  {% else %}
+    {% set utm_content = request.path_info.replace('/', '%2F') %}
+  {% endif %}
+
+  {# Create accounts.firefox.com link #}
+  {% set accounts_url = ['https://accounts.firefox.com/signup?service=', service,
+                          '&context=', context,
+                          '&entrypoint=', entrypoint,
+                          '&utm_content=', utm_content,
+                          '&utm_campaign=', campaign
+                        ]|join %}
+
+  {% if source %}
+    {% set accounts_url = accounts_url + '&utm_source=' + source %}
+  {% endif %}
+
+  {# Create ids for buttons and links #}
+  {% set download_id = '{}-download'.format(id_prefix) %}
+  {% set account_id = '{}-account'.format(id_prefix) %}
+  {% set android_id = '{}-android'.format(id_prefix) %}
+  {% set ios_id = '{}-ios'.format(id_prefix) %}
+  {% set update_id = '{}-update'.format(id_prefix) %}
+  {% set link_id = '{}-link'.format(id_prefix) %}
+
+  {# campaign for iOS app store link #}
+  {% set app_store_campaign = campaign + '-appstore-button' %}
+
+  <div class="show-fxa-not-fx show-fxa-default">
+    {{ download_firefox(dom_id=download_id, download_location=button_location) }}
+  </div>
+  <div class="show-fxa-supported-signed-out">
+    <a href="{{ accounts_url }}" class="button {{ button_class }}" data-button-name="Create account" data-link-type="button" data-cta-position="{{ button_location }}" id="{{ account_id }}">
+      {{ button_text }}
+    </a>
+  </div>
+  <div class="show-fxa-supported-signed-in fxa-app-buttons">
+    <p>{{ _('Get the app') }}</p>
+    <ul>
+      <li>
+        {{ google_play_button(id=android_id, extra_data_attributes={'download-location': button_location}) }}
+      </li>
+      <li>
+        <a href="{{ firefox_ios_url(app_store_campaign) }}" data-link-type="download" data-download-os="iOS" data-download-location="{{ button_location }}" id="{{ ios_id }}">
+          <img src="{{ l10n_img('firefox/ios/btn-app-store.svg') }}" alt="{{ _('Download on the App Store') }}" width="152" height="45">
+        </a>
+      </li>
+    </ul>
+  </div>
+  <div class="show-fxa-unsupported">
+    <a href="https://support.mozilla.org/kb/update-firefox-latest-version/?utm_source=www.mozilla.org&amp;utm_medium=referral&amp;utm_campaign={{ campaign }}" class="button {{ button_class }}" data-link-type="link" data-link-name="Update your Firefox" id="{{ update_id }}">
+      {{ _('Update your Firefox') }}
+    </a>
+  </div>
+  <div class="show-fxa-android">
+    <a href="https://support.mozilla.org/kb/sync-bookmarks-tabs-history-and-passwords-android/?utm_source=www.mozilla.org&amp;utm_medium=referral&amp;utm_campaign={{ campaign }}" class="button {{ button_class }}" data-link-type="link" data-link-name="Learn more" id="{{ link_id }}">{{ _('Learn more') }}</a>
+  </div>
+  <div class="show-fxa-ios">
+    <a href="https://support.mozilla.org/kb/sync-firefox-bookmarks-and-browsing-history-iOS/?utm_source=www.mozilla.org&amp;utm_medium=referral&amp;utm_campaign={{ campaign }}" class="button {{ button_class }}" data-link-type="link" data-link-name="Learn more" id="{{ link_id }}">{{ _('Learn more') }}</a>
+  </div>
+{%- endmacro %}
+
+{#
+  This macro is intended to be shown only to users on Firefox 48 and up.
+
+  entrypoint: used to tag a given "page type" and remains the same across all
+    pages of the class, e.g., no matter URL of the firstrun page, entrypoint is
+    always `firstrun`. must validate against [\w.:-]+
+    REQUIRED
+  utm_source: used for analytics
+    REQUIRED
+  class_name: applies a class to the form. default: 'fxa-email-form'
+  utm_params: dictionary of utm_* params to include. 'utm_' will automatically
+    be prepended to all keys. example:
+
+    {
+      'content': 'accounts-page',
+      'medium': 'referral',
+      'campaign': 'accounts-page',
+      'term': 'someterm',
+    }
+
+    all values must validate against /^[\w\/.%-]+/
+    More info on how to pick names: https://mozilla.github.io/application-services/docs/accounts/metrics.html
+
+    DO NOT include utm_source in this dictionary! (It's already a required param.)
+#}
+{% macro fxa_email_form(entrypoint, utm_source, class_name='fxa-email-form', utm_params={}, intro_text='', button_text='', button_class='button button-blue') -%}
+  <form action="{{ settings.FXA_ENDPOINT }}" data-mozillaonline-action="{{ settings.FXA_ENDPOINT_MOZILLAONLINE }}" id="fxa-email-form" class="{{ class_name }}">
+    <input type="hidden" name="action" value="email" />
+    <input type="hidden" name="context" value="fx_desktop_v3" />
+    <input type="hidden" name="service" value="sync" />
+    <input type="hidden" name="entrypoint" value="{{ entrypoint }}" id="fxa-email-form-entrypoint" />
+    <input type="hidden" name="form_type" value="email" />
+    {# flow_id and flow_begin_time will be populated via JS on page load #}
+    <input type="hidden" name="flow_id" value="" />
+    <input type="hidden" name="flow_begin_time" value="" />
+
+    {# utm_source is required, other utm_ params are optional #}
+    <input type="hidden" name="utm_source" value={{ utm_source }} id="fxa-email-form-utm-source" />
+  {% for attr, val in utm_params.items() %}
+    <input type="hidden" name="utm_{{ attr }}" value="{{ val }}" id="fxa-email-form-utm-{{ attr }}" />
+  {% endfor %}
+
+    <p class="fxa-email-form-intro">
+    {% if intro_text %}
+      {{ intro_text }}
+    {% else %}
+      {{ _('<strong>Enter your email</strong> to access Firefox Accounts.') }}
+    {% endif %}
+    </p>
+
+    <p class="agreement">
+    {% trans url1='https://accounts.firefox.com/legal/terms', url2='https://accounts.firefox.com/legal/privacy' %}
+      By proceeding, you agree to the <a href="{{ url1 }}">Terms of Service</a> and
+      <a href="{{ url2 }}">Privacy Notice</a>.
+    {% endtrans %}
+    </p>
+
+    <div class="fxa-email-field-container">
+      <p class="field">
+        <label for="fxa-email-field">{{ _('Email address') }}</label>
+        <input type="email" name="email" id="fxa-email-field" class="fxa-email-field" placeholder="user@example.com" required>
+      </p>
+
+      <button type="submit" class="{{ button_class }}" id="fxa-email-form-submit" data-button-name="Continue">
+      {% if button_text %}
+        {{ button_text }}
+      {% else %}
+        {{ _('Continue') }}
+      {% endif %}
+      </button>
+    </div>
+
+  </form>
 {%- endmacro %}

@@ -1,0 +1,118 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+@import '../../pebbles/includes/lib';
+@import '../../hubs/sections';
+@import 'header';
+@import 'send-to-device';
+
+
+//* -------------------------------------------------------------------------- */
+// Common elements
+
+body {
+    @include open-sans;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: normal;
+}
+
+
+//* -------------------------------------------------------------------------- */
+// Main content section
+
+.main-content {
+    background: #003eaa;
+    background: url('/media/img/firefox/whatsnew/fox-tail-small.png') top right -420px no-repeat,
+                linear-gradient(87deg, #6A11CB 0%, #2575FC 100%);
+    color: #fff;
+    text-align: center;
+
+    h2,
+    h3 {
+        color: #fff;
+    }
+
+    h2 {
+        @include font-size-level4;
+        margin-bottom: 20px;
+    }
+
+    h3 {
+        @include font-size-level2;
+        font-weight: bold;
+        margin: 0 auto 40px;
+        max-width: 14em;
+
+
+        br {
+            display: none;
+        }
+    }
+
+    header {
+        @include at2x('/media/img/logos/firefox/logo-quantum.png', 100px, 100px);
+        background-position: top center;
+        background-repeat: no-repeat;
+        padding-top: 120px;
+    }
+
+    &.show-send-to-device {
+        text-align: left;
+
+        h3 {
+            margin: 0 0 20px;
+            max-width: none;
+        }
+
+        header {
+            background-position: top left;
+        }
+    }
+
+    @media #{$mq-phone-wide} {
+        h3 br {
+            display: inline;
+        }
+    }
+
+    @media #{$mq-tablet} {
+        background: url('/media/img/firefox/whatsnew/fox-tail.png') top center no-repeat,
+                    linear-gradient(87deg, #6A11CB 0%, #2575FC 100%);
+        padding: 10vh 0;
+
+        .inner-container {
+            padding: 0 10%;
+        }
+    }
+
+    @media #{$mq-desktop} {
+        .inner-container {
+            padding: 0 15%;
+        }
+
+        header {
+            background-size: 140px 140px;
+            padding-top: 170px;
+        }
+    }
+
+    @media #{$mq-desktop-wide} {
+        .inner-container {
+            padding: 0 22%;
+        }
+    }
+}
+
+html[dir="rtl"] .main-content {
+
+    &.show-send-to-device {
+        text-align: right;
+
+        header {
+            background-position: top right;
+        }
+    }
+}

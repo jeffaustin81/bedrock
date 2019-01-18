@@ -7,7 +7,7 @@ def firefox_mobile_faq(request, *args, **kwargs):
     if 'os=firefox-os' in qs:
         return 'https://support.mozilla.org/products/firefox-os'
 
-    return 'firefox.android.faq'
+    return 'https://support.mozilla.org/products/mobile'
 
 
 def firefox_channel(*args, **kwargs):
@@ -69,8 +69,14 @@ redirectpatterns = (
     # bug 878871
     redirect(r'^firefoxos', '/firefox/os/'),
 
+    # bug 1438302
+    no_redirect(r'^firefox/download/thanks/?$'),
+
     # Bug 1006616
     redirect(r'^download/?$', 'firefox.new'),
+
+    # Bug 1409554
+    redirect(r'^(firefox|mobile)/download', 'firefox.new'),
 
     # bug 837883
     redirect(r'^firefox/firefox\.exe$', 'mozorg.home', re_flags='i'),
@@ -92,7 +98,7 @@ redirectpatterns = (
              to_kwargs={'channel': 'organizations'}),
 
     # bug 729329
-    redirect(r'^mobile/sync', 'firefox.features.sync'),
+    redirect(r'^mobile/sync', 'firefox.accounts'),
 
     # bug 882845
     redirect(r'^firefox/toolkit/download-to-your-devices', 'firefox.new'),
@@ -108,7 +114,7 @@ redirectpatterns = (
     }),
 
     # Bug 868182, 986174
-    redirect(r'^(m|(firefox/)?mobile)/features/?$', 'firefox.android.index'),
+    redirect(r'^(m|(firefox/)?mobile)/features/?$', 'firefox.mobile'),
     redirect(r'^(m|(firefox/)?mobile)/faq/?$', firefox_mobile_faq, query=False),
 
     # bug 884933
@@ -139,10 +145,10 @@ redirectpatterns = (
 
     # Bug 1110927
     redirect(r'^(products/)?firefox/start/central\.html$', 'firefox.new'),
-    redirect(r'^firefox/sync/firstrun\.html$', 'firefox.features.sync'),
+    redirect(r'^firefox/sync/firstrun\.html$', 'firefox.accounts'),
 
     # Bug 920212
-    redirect(r'^firefox/fx/?$', 'firefox.new'),
+    redirect(r'^firefox/fx(/.*)?', 'firefox'),
 
     # Bug 979531, 1003727, 979664, 979654, 979660
     redirect(r'^firefox/customize/?$', 'https://support.mozilla.org/kb/customize-firefox-controls-buttons-and-toolbars'),
@@ -226,7 +232,7 @@ redirectpatterns = (
     redirect(r'^(mobile|fennec)/?$', 'firefox'),
 
     # bug 876668
-    redirect(r'^mobile/customize(?:/.*)?$', '/firefox/android/'),
+    redirect(r'^mobile/customize(?:/.*)?$', '/firefox/mobile/'),
 
     # bug 1211907
     redirect(r'^firefox/independent/?$', 'firefox.new'),
@@ -294,12 +300,12 @@ redirectpatterns = (
     redirect(r'^firefox/os(/.*)?$', 'https://support.mozilla.org/products/firefox-os'),
 
     # Bug 1252332
-    redirect(r'^sync/?$', 'firefox.features.sync'),
+    redirect(r'^sync/?$', 'firefox.accounts'),
 
     # Bug 424204
     redirect(r'^firefox/help/?$', 'https://support.mozilla.org/'),
 
-    redirect(r'^fxandroid/?$', 'firefox.android.index'),
+    redirect(r'^fxandroid/?$', 'firefox.mobile'),
 
     # Bug 1255882
     redirect(r'^firefox/personal', 'firefox.new'),
@@ -471,7 +477,7 @@ redirectpatterns = (
     redirect('^products/firefox/support/$', 'https://support.mozilla.org/'),
     redirect('^products/firefox/switch', 'firefox.new'),
     redirect('^products/firefox/system-requirements', '/firefox/system-requirements/'),
-    redirect('^products/firefox/tabbed-browsing', 'firefox.desktop.index'),
+    redirect('^products/firefox/tabbed-browsing', 'firefox'),
     redirect('^products/firefox/text-zoom\.html$',
              'https://support.mozilla.org/kb/font-size-and-zoom-increase-size-of-web-pages'),
     redirect('^products/firefox/themes$', 'https://addons.mozilla.org/themes/'),
@@ -479,7 +485,7 @@ redirectpatterns = (
     redirect('^products/firefox/ui-customize\.html$',
              'https://support.mozilla.org/kb/customize-firefox-controls-buttons-and-toolbars'),
     redirect('^products/firefox/upgrade', 'firefox.new'),
-    redirect('^products/firefox/why/$', 'firefox.desktop.index'),
+    redirect('^products/firefox/why/$', 'firefox'),
 
     # bug 857246 redirect /products/firefox/start/  to start.mozilla.org
     redirect(r'^products/firefox/start/?$', 'http://start.mozilla.org'),
@@ -488,12 +494,9 @@ redirectpatterns = (
     # bug 1260423
     redirect(r'^firefox/choose/?$', 'firefox.new'),
 
-    # bug 1283397
-    redirect(r'^firefox/pocket/?$', 'https://getpocket.com/firefox/'),
-
     # bug 1288552 - redirect /secondrun/ traffic from funnelcake test
     redirect(r'^firefox(?:\/\d+\.\d+(?:\.\d+)?(?:a\d+)?)?/secondrun(?:/.*)?',
-             'firefox.mobile-download', query=False),
+             'firefox.mobile', query=False),
 
     # bug 1293539
     redirect(r'^firefox(?:\/\d+\.\d+(?:\.\d+)?(?:a\d+)?)?/tour/?$',
@@ -528,7 +531,7 @@ redirectpatterns = (
     redirect(r'^Firefox/?$', 'firefox'),
 
     # bug 1370587
-    redirect(r'^firefox/sync/?', 'firefox.features.sync'),
+    redirect(r'^firefox/sync/?', 'firefox.accounts'),
 
     # bug 1386112
     redirect(r'^firefox/android/faq/?', 'https://support.mozilla.org/products/mobile'),
@@ -539,4 +542,62 @@ redirectpatterns = (
     redirect(r'^firefox/desktop/tips/?', 'firefox.features.index'),
     redirect(r'^firefox/desktop/customize/?', 'https://support.mozilla.org/kb/customize-firefox-controls-buttons-and-toolbars'),
     redirect(r'^firefox/private-browsing/?', 'firefox.features.private-browsing'),
+
+    # bug 1405436
+    redirect(r'^firefox/organic', '/firefox/'),
+    redirect(r'^firefox/landing/better', '/firefox/'),
+    redirect(r'^firefox/(new/)?addon', 'https://addons.mozilla.org'),
+    redirect(r'^firefox/tips', '/firefox/features/'),
+    redirect(r'^firefox/new/.+', '/firefox/new/'),
+    redirect(r'^firefox/38.0.3/releasenotes/$', '/firefox/38.0.5/releasenotes/'),
+    redirect(r'^firefox/default\.htm', '/firefox/'),
+    redirect(r'^firefox/android/(?P<version>\d+\.\d+(?:\.\d+)?)$', '/firefox/android/{version}/releasenotes/'),
+    redirect(r'^firefox/stats/', '/firefox/'),
+
+    # bug 1416706
+    redirect(r'^firefox/desktop/?', 'firefox'),
+
+    # bug 1418500
+    redirect(r'^firefox/android/?$', 'firefox.mobile'),
+    redirect(r'^firefox/focus/?$', 'firefox.mobile'),
+    redirect(r'^firefox/ios/?$', 'firefox.mobile'),
+
+    # bug 1416708
+    redirect(r'^firefox/quantum/?', 'firefox'),
+
+    # bug 1421584
+    redirect(r'^firefox/organizations/faq/?$', 'firefox.organizations.organizations'),
+
+    # bug 1425865 - Amazon Fire TV goes to SUMO until we have a product page.
+    redirect(r'^firefox/fire-tv/?$',
+        'https://support.mozilla.org/products/firefox-fire-tv/',
+        permanent=False),
+
+    # bug 1430894
+    redirect(r'^firefox/interest-dashboard/?', 'https://support.mozilla.org/kb/firefox-add-technology-modernizing'),
+
+    # bug 1419244
+    redirect(r'^firefox/mobile-download(/.*)?', 'firefox.mobile'),
+
+    # bug 960651, 1436973
+    redirect(r'(firefox|mobile)/([^/]+)/details(/|/.+\.html)?$', 'firefox.unsupported-systems',
+             locale_prefix=False),
+    redirect(r'^firefox/unsupported/', 'firefox.unsupported-systems'),
+
+    # bug 1428783
+    redirect(r'^firefox/dnt/?$', 'https://support.mozilla.org/kb/how-do-i-turn-do-not-track-feature'),
+
+    # issue 6209
+    redirect(r'^pocket/?', '/firefox/pocket/'),
+
+    # issue 6186
+    redirect(r'^vote/?', '/firefox/election/'),
+
+    # fxa
+    redirect(r'^firefox/accounts/features/?', 'firefox.accounts'),
+    redirect(r'^firefox/features/sync/?', 'firefox.accounts'),
+    redirect(r'^firefox/features/send-tabs/?', 'firefox.accounts'),
+
+    # issue 6512
+    redirect(r'^firefox/firefox\.html$', 'firefox.new'),
 )

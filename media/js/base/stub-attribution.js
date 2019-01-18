@@ -98,7 +98,7 @@ if (typeof Mozilla === 'undefined') {
         $('.download-list .download-link, .download-platform-list .download-link').each(function() {
             var version;
             // If this is a transitional download link do nothing.
-            if (this.href && this.href.indexOf('/firefox/new/?scene=2') === -1) {
+            if (this.href && this.href.indexOf('/firefox/download/thanks/') === -1) {
 
                 version = $(this).data('downloadVersion');
                 // Currently only Windows 32bit uses the stub installer, but this could
@@ -113,7 +113,7 @@ if (typeof Mozilla === 'undefined') {
     /**
      * Appends stub attribution data as URL parameters.
      * Note: data is already URI encoded when returned via the service.
-     * @param {String url - URL to append data to.
+     * @param {String} url - URL to append data to.
      * @param {Object} data - attribution_code, attribution_sig.
      * @return {String} url + additional parameters.
      */
@@ -163,18 +163,6 @@ if (typeof Mozilla === 'undefined') {
     StubAttribution.getAttributionData = function(ref) {
         var params = new window._SearchParams().utmParams();
         var referrer = typeof ref !== 'undefined' ? ref : document.referrer;
-        var utmCount = 0;
-
-        for (var utm in params) {
-            if (params.hasOwnProperty(utm)) {
-                utmCount += 1;
-            }
-        }
-
-        // if there are no utm params and no referrer, do nothing.
-        if (utmCount === 0 && (typeof referrer === 'undefined' || referrer === '')) {
-            return false;
-        }
 
         /* eslint-disable camelcase */
         return {
@@ -196,7 +184,7 @@ if (typeof Mozilla === 'undefined') {
      */
     StubAttribution.isFirefoxNewScene2 = function(location) {
         location = typeof location !== 'undefined' ? location : window.location.href;
-        return location.indexOf('/firefox/new/') > -1 && location.indexOf('scene=2') > -1;
+        return location.indexOf('/firefox/download/thanks/') > -1;
     };
 
     /**
@@ -215,10 +203,6 @@ if (typeof Mozilla === 'undefined') {
         }
 
         if (window.site.platform !== 'windows') {
-            return false;
-        }
-
-        if (window.site.needsSha1()) {
             return false;
         }
 

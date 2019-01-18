@@ -10,15 +10,21 @@
 {% block page_title_suffix %}{% endblock %}
 {#- This will appear as <meta property="og:title"> which can be used for social share -#}
 {% block page_og_title %}{{ self.page_title() }}{% endblock %}
-{% block page_image %}{{ static('img/firefox/template/page-image-quantum.png') }}{% endblock %}
 
 {% block page_css %}
-  {% stylesheet 'firefox_channel' %}
+  {{ css_bundle('firefox_channel') }}
 {% endblock %}
 
 {% block body_class %}{% endblock %}
 
+{% block global_nav %}
+  {% if LANG.startswith('en-') %}
+    {% include 'includes/protocol/navigation/index.html' %}
+  {% endif %}
+{% endblock %}
+
 {% block site_header %}
+{% if not LANG.startswith('en-') %}
 <header id="masthead">
   <div class="container">
     <div class="logo">
@@ -40,6 +46,7 @@
     </nav>
   </div>
 </header>
+{% endif %}
 {% endblock %}
 
 {% block content %}

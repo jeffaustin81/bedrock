@@ -6,15 +6,23 @@ import re
 from django.core.urlresolvers import NoReverseMatch
 from django.db.models import Q
 from django.utils.decorators import method_decorator
+from django.views.decorators.http import require_safe
 from django.views.generic import DetailView, ListView, RedirectView
 
-from bedrock.base.urlresolvers import reverse
+from jsonview.decorators import json_view
 from product_details import product_details
 from product_details.version_compare import Version
 from lib.l10n_utils import LangFilesMixin
 
+from bedrock.base.urlresolvers import reverse
 from bedrock.mozorg.decorators import cache_control_expires
-from bedrock.security.models import Product, SecurityAdvisory
+from bedrock.security.models import HallOfFamer, MitreCVE, Product, SecurityAdvisory
+
+
+@json_view
+@require_safe
+def mitre_cve_feed(request):
+    return [cve.feed_entry() for cve in MitreCVE.objects.all()]
 
 
 def product_is_obsolete(prod_name, version):
@@ -51,6 +59,22 @@ def product_is_obsolete(prod_name, version):
 
     # everything else is obsolete
     return True
+
+
+class HallOfFameView(LangFilesMixin, ListView):
+    template_names = {
+        'client': 'security/bug-bounty/hall-of-fame.html',
+        'web': 'security/bug-bounty/web-hall-of-fame.html',
+    }
+    context_object_name = 'hofers'
+    allow_empty = False
+    program = None
+
+    def get_template_names(self):
+        return [self.template_names[self.program]]
+
+    def get_queryset(self):
+        return HallOfFamer.objects.filter(program=self.program)
 
 
 class AdvisoriesView(LangFilesMixin, ListView):

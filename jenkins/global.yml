@@ -1,17 +1,19 @@
 environment:
-  SELENIUM_VERSION: 2.52.0
+  SELENIUM_VERSION: 3.5.0
+  DOCKER_SELENIUM_VERSION: 3.5.3-astatine
 
 regions:
-  usw:
-    deis_profile: usw
-    name: us-west
-    registry_port: 5001
-    deis_bin: deis
-  tokyo:
-    deis_profile: tokyo
-    name: tokyo
-    deis_bin: deis2
   frankfurt:
-    deis_profile: frankfurt
     name: frankfurt
+    config_repo: git@www-config:mozmeao/www-config
+    config_branch: git-sync-operator
+    deployment_log_base_url: https://s3-us-west-2.amazonaws.com/mozmeao-deployments/frankfurt
+  oregon-b:
+    name: oregon-b
     deis_bin: deis2
+  iowa-a:
+    name: gcp
+    cluster_name: iowa-a
+    config_repo: git@www-config:mozmeao/www-config
+    config_branch: git-sync-operator
+    deployment_log_base_url: https://s3-us-west-2.amazonaws.com/mozmeao-deployments/iowa-a

@@ -2,7 +2,8 @@
 
 {% set_lang_files "mozorg/newsletters" %}
 
-{% block extra_meta %}<meta name="robots" content="noindex">{% endblock %}
+{# "noindex" pages should not have the canonical or hreflang tags: bug 1442331 #}
+{% block canonical_urls %}<meta name="robots" content="noindex,follow">{% endblock %}
 
 {% block body_id %}newsletter-updated{% endblock body_id %}
 
@@ -58,7 +59,7 @@
       <div class="sub-feature" id="mobile">
         <h4>{{ _('Get up and go') }}</h4>
         <p>{{ _('It’s your Web anywhere you go.') }}</p>
-        <a href="{{ url('firefox.android.index') }}" class="link">{{ _('Get Firefox for mobile!') }}</a>
+        <a href="{{ url('firefox.mobile') }}" class="link">{{ _('Get Firefox for mobile!') }}</a>
       </div>
       <div class="sub-feature" id="addons">
         <h4>{{ _('Added extras') }}</h4>

@@ -16,12 +16,12 @@
 {% block body_attrs %}{{ super() }} data-global-nav-current-link="internet-health"{% endblock %}
 
 {% block page_css %}
-  {% stylesheet 'health-subpage' %}
+  {{ css_bundle('health-subpage') }}
 {% endblock %}
 
 {% block site_header %}
   {% if LANG.startswith('en-') %}
-    {% include 'includes/global-nav.html' %}
+    {% include 'includes/protocol/navigation/index.html' %}
   {% else %}
     {% set logo_src = static('img/pebbles/moz-wordmark-dark-reverse.svg') %}
     {% include 'mozorg/home/includes/nav.html' %}
@@ -29,7 +29,9 @@
 {% endblock %}
 
 {% block content %}
-{% include 'mozorg/internet-health/includes/sub-nav.html' %}
+{% with current='inclusion' %}
+  {% include 'mozorg/internet-health/includes/sub-nav.html' %}
+{% endwith %}
 
 <main role="main">
   <header class="section main-header">
@@ -402,9 +404,13 @@
       <h2>{{ _('Hungry for more?') }}</h2>
       <p class="report-cta">
         <span>
-        {% trans healthreport='https://internethealthreport.org' %}
-          Read on about Digital Inclusion in our <a href="{{ healthreport }}">Internet Health Report</a>.
-        {% endtrans %}
+        {% if LANG.startswith('en-') %}
+          Keep reading in our <a href="https://internethealthreport.org">Internet Health Report</a> or <a href="https://assets.mozilla.net/pdf/IHPbriefs_Digital_Inclusion_March_2017.pdf" data-link-type="document-download" data-link-name="IH Brief:digital-inclusion">Digital Inclusion brief (PDF)</a>.
+        {% else %}
+          {% trans healthreport='https://internethealthreport.org' %}
+            Read on about Digital Inclusion in our <a href="{{ healthreport }}">Internet Health Report</a>.
+          {% endtrans %}
+        {% endif %}
         </span>
       </p>
     </div>
@@ -426,5 +432,5 @@
 {% block email_form %}{% endblock %}
 
 {% block js %}
-  {% javascript 'internet-health-subpage' %}
+  {{ js_bundle('internet-health-subpage') }}
 {% endblock %}

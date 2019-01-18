@@ -67,6 +67,11 @@
     };
 
     var setFirefoxStatus = function() {
+        // Windows XP/Vista warning overrides the Firefox status message
+        if ($html.hasClass('xpvista')) {
+            return;
+        }
+
         var status = getFirefoxStatus();
         $html.addClass(status);
 
@@ -108,7 +113,7 @@
      * for latest, out-of-date, pre-release etc. For iOS there is
      * only a single state that shows the download button.
      */
-    if (client.isFirefoxDesktop ||client.isFirefoxAndroid) {
+    if (client.isFirefoxDesktop || client.isFirefoxAndroid) {
         setFirefoxStatus();
     }
 

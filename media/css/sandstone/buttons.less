@@ -33,7 +33,7 @@
     .inline-block;
     .transition(background-color .1s ease-in-out);
     background: none;
-    border-radius: 100px;
+    border-radius: 2px;
     cursor: pointer;
     padding: (@baseLine / 2) 36px;
     position: relative;
@@ -136,13 +136,14 @@ a.button:visited {
     }
 
     &.button-green {
-        background-color: @mozGreen;
+        background-color: @buttonGreen;
         color: @light;
-        border: 2px solid @mozGreenBorder;
+        border: 2px solid @buttonGreen;
 
         &:hover,
         &:focus {
-            background-color: @mozGreenHover;
+            background-color: saturate(darken(@buttonGreen, 5%), 10%);
+            border-color: saturate(darken(@buttonGreen, 5%), 10%);
         }
     }
 
@@ -183,13 +184,14 @@ a.button:visited {
 // privacy policy link that accompany most download buttons
 .fx-privacy-link {
     display: block;
-    .font-size(@largeFontSize);
+    .font-size(12px);
     text-align: center;
     text-shadow: none;
 
     a:link,
     a:visited {
         color: @light;
+        text-decoration: none;
     }
 
     a:hover,
@@ -226,16 +228,6 @@ a.button:visited {
     }
 }
 
-// fxfamilynav overrides
-.fxfamilynav-cta-wrapper {
-    .button,
-    a.button:link,
-    a.button:visited {
-        padding: 10px 18px;
-        .font-size(@baseFontSize);
-    }
-}
-
 // download button and related containers specific
 ul.download-list {
     list-style-type: none;
@@ -245,8 +237,13 @@ ul.download-list {
         margin-left: 0;
     }
 
+    .download-link {
+        .font-size(16px);
+        padding: .9em 40px;
+    }
+
     strong {
-        font-weight: normal;
+        font-weight: bold;
     }
 }
 
@@ -267,7 +264,7 @@ ul.download-list {
             margin: @baseLine 0 0;
 
             .button {
-                padding: 6px;
+                padding: 6px 10px;
                 margin-left: 3px;
                 .font-size(14px);
             }
@@ -313,7 +310,6 @@ ul.download-list {
 }
 
 // OS detection
-.download-button .os_winsha1,
 .download-button .os_win64,
 .download-button .os_linux,
 .download-button .os_linux64,
@@ -395,15 +391,6 @@ ul.download-list {
 
 .android.x86 .download-button .download-other.os_android .armv7up {
     display: inline !important;
-}
-
-// IE on Windows XP, Server 2003, Vista need sha-1 button
-.windows.sha-1 .download-button .os_win {
-    display: none !important;
-}
-
-.windows.sha-1 .download-button .os_winsha1 {
-    display: block !important;
 }
 
 /* stylelint-enable */

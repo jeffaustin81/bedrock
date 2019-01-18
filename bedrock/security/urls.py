@@ -6,8 +6,10 @@ from django.conf.urls import url
 
 from bedrock.mozorg.util import page
 from bedrock.security.views import (
+    mitre_cve_feed,
     AdvisoriesView,
     AdvisoryView,
+    HallOfFameView,
     KVRedirectsView,
     OldAdvisoriesListView,
     OldAdvisoriesView,
@@ -23,13 +25,17 @@ urlpatterns = (
     page('web-bug-bounty', 'security/web-bug-bounty.html'),
     page('bug-bounty/faq', 'security/bug-bounty/faq.html'),
     page('bug-bounty/faq-webapp', 'security/bug-bounty/faq-webapp.html'),
-    page('bug-bounty/hall-of-fame', 'security/bug-bounty/hall-of-fame.html'),
     page('bug-bounty/web-eligible-sites', 'security/bug-bounty/web-eligible-sites.html'),
-    page('bug-bounty/web-hall-of-fame', 'security/bug-bounty/web-hall-of-fame.html'),
+
+    url(r'^bug-bounty/hall-of-fame/$',
+        HallOfFameView.as_view(program='client'), name='security.bug-bounty.hall-of-fame'),
+    url(r'^bug-bounty/web-hall-of-fame/$',
+        HallOfFameView.as_view(program='web'), name='security.bug-bounty.web-hall-of-fame'),
     url(r'^advisories/$',
         AdvisoriesView.as_view(), name='security.advisories'),
     url(r'^advisories/mfsa(?P<pk>\d{4}-\d{2,3})/$',
         AdvisoryView.as_view(), name='security.advisory'),
+    url(r'^advisories/cve-feed\.json$', mitre_cve_feed, name='security.advisories.cve_feed'),
 
     page('known-vulnerabilities', 'security/known-vulnerabilities.html'),
     page('known-vulnerabilities/older-vulnerabilities', 'security/older-vulnerabilities.html'),

@@ -25,7 +25,7 @@ def loadBranch(String branch) {
         for ( app in config.apps ) {
             if ( app.length() > 63 ) {
                 err_msg = "App name exceeds 63 char limit: ${app}"
-                utils.ircNotification([message: err_msg, status: 'failure'])
+                utils.slackNotification([message: err_msg, status: 'failure'])
                 throw new Exception(err_msg)
             }
 
@@ -34,7 +34,6 @@ def loadBranch(String branch) {
 
     // load the global config
     global_config = readYaml file: 'jenkins/global.yml'
-    env.DEMO_MODE = config.demo ? 'true' : 'false'
     // defined in the Library loaded above
     setGitEnvironmentVariables()
     setConfigEnvironmentVariables(global_config)
@@ -51,14 +50,6 @@ def loadBranch(String branch) {
 node {
     stage ('Prepare') {
         checkout scm
-        sh 'git submodule sync'
-        sh 'git submodule update --init --recursive'
-        // clean up
-        sh 'make clean'
-        // save the files for later
-        stash name: 'scripts', includes: 'bin/,docker/'
-        stash name: 'tests', includes: 'tests/,requirements/'
-        stash 'workspace'
     }
     loadBranch(env.BRANCH_NAME)
 }

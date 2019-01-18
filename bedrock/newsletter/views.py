@@ -28,9 +28,11 @@ from bedrock.base import waffle
 from lib.l10n_utils.dotlang import _, _lazy
 from bedrock.base.urlresolvers import reverse
 
-from .forms import (EmailForm, ManageSubscriptionsForm, NewsletterForm, NewsletterFooterForm)
+from .forms import (CountrySelectForm, EmailForm, ManageSubscriptionsForm,
+                    NewsletterForm, NewsletterFooterForm)
 # Cannot use short "from . import utils" because we need to mock
 # utils.get_newsletters in our tests
+from bedrock.base.views import get_geo_from_request
 from bedrock.mozorg.util import HttpResponseJSON
 from bedrock.newsletter import utils
 
@@ -58,8 +60,8 @@ invalid_email_address = _lazy(u'This is not a valid email address. '
 
 NEWSLETTER_STRINGS = {
     u'about-mozilla': {
-        'description': _lazy(u'Bringing you the best new opportunities to help support the open Web.'),
-        'title': _lazy(u'Mozilla Communities')},
+        'description': _lazy(u'Join Mozillians all around the world and learn about impactful opportunities to support Mozilla\u2019s mission.'),
+        'title': _lazy(u'Mozilla Community')},
     u'about-standards': {
         'title': _lazy(u'About Standards')},
     u'addon-dev': {
@@ -193,6 +195,29 @@ UUID_REGEX = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
 
 
 @never_cache
+def set_country(request, token):
+    """Allow a user to set their country"""
+    initial = {}
+    countrycode = get_geo_from_request(request)
+    if countrycode:
+        initial['country'] = countrycode.lower()
+
+    form = CountrySelectForm('en-US', data=request.POST or None, initial=initial)
+    if form.is_valid():
+        try:
+            basket.request('post', 'user-meta', data=form.cleaned_data, token=token)
+        except basket.BasketException:
+            log.exception("Error updating user's country in basket")
+            messages.add_message(
+                request, messages.ERROR, general_error
+            )
+        else:
+            return redirect(reverse('newsletter.country_success'))
+
+    return l10n_utils.render(request, 'newsletter/country.html', {'form': form})
+
+
+@never_cache
 def confirm(request, token):
     """
     Confirm subscriptions.
@@ -306,10 +331,15 @@ def existing(request, token=None):
     # as already subscribed.
     initial = []
     for newsletter, data in newsletter_data.iteritems():
+        # Ignore newsletters in the OTHER_NEWSLETTERS setting
+        if newsletter in settings.OTHER_NEWSLETTERS:
+            continue
+
         # Only show a newsletter if it has ['active'] == True and
         # ['show'] == True or the user is already subscribed
         if not data.get('active', False):
             continue
+
         if data.get('show', False) or newsletter in user['newsletters']:
             langs = data['languages']
             nstrings = NEWSLETTER_STRINGS.get(newsletter)
@@ -392,6 +422,8 @@ def existing(request, token=None):
             if not remove_all:
                 kwargs['newsletters'] = ",".join(newsletters)
             if kwargs:
+                # always send lang so basket doesn't try to guess
+                kwargs['lang'] = data['lang']
                 try:
                     basket.update_user(token, **kwargs)
                 except basket.BasketException:
@@ -571,12 +603,13 @@ def recovery(request):
     else:
         form = EmailForm()
 
-    return l10n_utils.render(
-        request,
-        "newsletter/recovery.html",
-        {
-            'form': form,
-        })
+    # This view is shared between two different templates. For context see bug 1442129.
+    if '/newsletter/opt-out-confirmation/' in request.get_full_path():
+        template = "newsletter/opt-out-confirmation.html"
+    else:
+        template = "newsletter/recovery.html"
+
+    return l10n_utils.render(request, template, {'form': form})
 
 
 def newsletter_subscribe(request):

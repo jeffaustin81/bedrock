@@ -1002,8 +1002,6 @@ URLS = flatten((
     url_test('/docs/how-to-document.html', '/contribute/writing/how-to'),
     url_test('/docs/hybrid-cd.html', 'http://developer.mozilla.org/en/Creating_a_hybrid_CD'),
     url_test('/docs/jargon.html', 'http://developer.mozilla.org/en/Glossary'),
-    url_test('/docs/lxr-comments.html',
-             '/contribute/writing/lxr-comments'),
     url_test('/docs/mdp/', '/contribute/writing/'),
     url_test('/docs/modunote.htm', 'http://developer.mozilla.org/en/Modularization_Techniques'),
     url_test('/docs/mozilla-faq.html', 'http://developer.mozilla.org/en/Mozilla_Release_FAQ'),
@@ -1071,7 +1069,7 @@ URLS = flatten((
     url_test('/firebird', 'http://www.firefox.com'),
     url_test('/foundation/privacy-policy.html', '/privacy/websites/'),
     url_test('/get-involved.html', '/contribute/'),
-    url_test('/glimpsesearch.html', 'http://lxr.mozilla.org/'),
+    url_test('/glimpsesearch.html', 'https://dxr.mozilla.org/'),
     url_test('/hacking/bonsai.html', 'http://developer.mozilla.org/en/Hacking_with_Bonsai'),
     url_test('/hacking/code-review-faq.html', 'http://developer.mozilla.org/en/Code_Review_FAQ'),
     url_test('/hacking/coding-introduction.html',
@@ -1741,7 +1739,7 @@ URLS = flatten((
     url_test('/products/firefox/support/', 'https://support.mozilla.org/'),
     url_test('/products/firefox/switch', '/firefox/new/'),
     url_test('/products/firefox/system-requirements.html', '/firefox/system-requirements/'),
-    url_test('/products/firefox/tabbed-browsing.html', '/firefox/desktop/'),
+    url_test('/products/firefox/tabbed-browsing.html', '/firefox/'),
     url_test('/products/firefox/text-zoom.html',
              'https://support.mozilla.org/kb/font-size-and-zoom-increase-size-of-web-pages'),
     url_test('/products/firefox/themes', 'https://addons.mozilla.org/themes/'),
@@ -1749,7 +1747,7 @@ URLS = flatten((
     url_test('/products/firefox/ui-customize.html',
              'https://support.mozilla.org/kb/customize-firefox-controls-buttons-and-toolbars'),
     url_test('/products/firefox/upgrade/', '/firefox/new/'),
-    url_test('/products/firefox/why/', '/firefox/desktop/'),
+    url_test('/products/firefox/why/', '/firefox/'),
     url_test('/products/thunderbird/all-beta.html', '/thunderbird/all/'),
     url_test('/products/thunderbird/all.html', '/thunderbird/all/'),
     url_test('/products/thunderbird/global-inbox.html',
@@ -1964,13 +1962,13 @@ URLS = flatten((
     url_test('/projects/ui/accessibility/span-checkbox.html',
              '/access/samples/span-checkbox.html'),
     url_test('/projects/ui/accessibility/ISimpleDOMNode.idl',
-             'http://lxr.mozilla.org/seamonkey/source/'
+             'https://dxr.mozilla.org/seamonkey/source/'
              'accessible/public/msaa/ISimpleDOMNode.idl?raw=1'),
     url_test('/projects/ui/accessibility/ISimpleDOMText.idl',
-             'http://lxr.mozilla.org/seamonkey/source/'
+             'https://dxr.mozilla.org/seamonkey/source/'
              'accessible/public/msaa/ISimpleDOMText.idl?raw=1'),
     url_test('/projects/ui/accessibility/ISimpleDOMDocument.idl',
-             'http://lxr.mozilla.org/seamonkey/source/'
+             'https://dxr.mozilla.org/seamonkey/source/'
              'accessible/public/msaa/ISimpleDOMDocument.idl?raw=1'),
     url_test('/projects/ui/accessibility/accesskey.html',
              '/access/keyboard/accesskey'),

@@ -515,4 +515,112 @@ describe('mozilla-client.js', function() {
 
     });
 
+    describe('getFxaDetails', function () {
+
+        beforeEach(function () {
+            jasmine.clock().install();
+        });
+
+        afterEach(function () {
+            delete window.Mozilla.Client.FxaDetails;
+            jasmine.clock().uninstall();
+        });
+
+        it('should fire the callback function with a FxA details object', function() {
+            var callback1 = jasmine.createSpy('callback1');
+            var result = {
+                'firefox': true,
+                'legacy': false,
+                'mobile': false,
+                'setup': false,
+                'desktopDevices': false,
+                'mobileDevices': false
+            };
+
+            window.Mozilla.Client.getFxaDetails(callback1);
+            jasmine.clock().tick(500);
+            expect(callback1).toHaveBeenCalledWith(result);
+            expect(window.Mozilla.Client.FxaDetails).toEqual(result);
+        });
+
+    });
+
+    describe('isFirefoxOutOfDate', function () {
+
+        it('should return true if client version is equal to or less than the major version considered out of date', function () {
+            var result = Mozilla.Client.isFirefoxOutOfDate('50.0', 2, '56.0.1');
+            expect(result).toBeTruthy();
+
+            var result2 = Mozilla.Client.isFirefoxOutOfDate('54.0', 2, '56.0');
+            expect(result2).toBeTruthy();
+
+            var result3 = Mozilla.Client.isFirefoxOutOfDate('54.0a1', 2, '56.0.1a1');
+            expect(result3).toBeTruthy();
+
+            var result4 = Mozilla.Client.isFirefoxOutOfDate('55.0.1', 1, '56.0');
+            expect(result4).toBeTruthy();
+        });
+
+        it('should return false if client version is greater than the major version considered out of date', function () {
+            var result = Mozilla.Client.isFirefoxOutOfDate('56.0', 2, '56.0.1');
+            expect(result).toBeFalsy();
+
+            var result2 = Mozilla.Client.isFirefoxOutOfDate('58.0a2', 2, '56.0.1');
+            expect(result2).toBeFalsy();
+
+            var result3 = Mozilla.Client.isFirefoxOutOfDate('55.0', 2, '56.0.1');
+            expect(result3).toBeFalsy();
+
+            var result4 = Mozilla.Client.isFirefoxOutOfDate('56.0', 1, '56.0.1');
+            expect(result4).toBeFalsy();
+        });
+
+    });
+
+    describe('isFirefoxURLOutOfDate', function () {
+
+        it('should return true if URL version is equal to or less than the major version considered out of date', function () {
+            var result = Mozilla.Client.isFirefoxURLOutOfDate(2, '/firefox/54.0/', '56.0');
+            expect(result).toBeTruthy();
+
+            var result2 = Mozilla.Client.isFirefoxURLOutOfDate(2, '/firefox/54.0a1/', '56.0');
+            expect(result2).toBeTruthy();
+
+            var result3 = Mozilla.Client.isFirefoxURLOutOfDate(2, '/firefox/54.0a2/', '56.0');
+            expect(result3).toBeTruthy();
+
+            var result4 = Mozilla.Client.isFirefoxURLOutOfDate(1, '/firefox/55.0.1/', '56.0');
+            expect(result4).toBeTruthy();
+
+            var result5 = Mozilla.Client.isFirefoxURLOutOfDate(2, '/firefox/53.0/', '56.0');
+            expect(result5).toBeTruthy();
+        });
+
+        it('should return false if URL version is greater than the major version considered out of date', function () {
+            var result = Mozilla.Client.isFirefoxURLOutOfDate(2, '/firefox/55.0/', '56.0');
+            expect(result).toBeFalsy();
+
+            var result2 = Mozilla.Client.isFirefoxURLOutOfDate(2, '/firefox/55.0a1/', '56.0');
+            expect(result2).toBeFalsy();
+
+            var result3 = Mozilla.Client.isFirefoxURLOutOfDate(2, '/firefox/55.0a2/', '56.0');
+            expect(result3).toBeFalsy();
+
+            var result4 = Mozilla.Client.isFirefoxURLOutOfDate(1, '/firefox/56.0/', '56.0.1');
+            expect(result4).toBeFalsy();
+
+            var result5 = Mozilla.Client.isFirefoxURLOutOfDate(2, '/firefox/58.0/', '56.0');
+            expect(result5).toBeFalsy();
+        });
+
+        it('should return false if the URL version is invalid', function() {
+            var result = Mozilla.Client.isFirefoxURLOutOfDate(2, '/firefox/foo/', '56.0');
+            expect(result).toBeFalsy();
+
+            var result2 = Mozilla.Client.isFirefoxURLOutOfDate(2, '/firefox/10/', '56.0');
+            expect(result2).toBeFalsy();
+        });
+
+    });
+
 });

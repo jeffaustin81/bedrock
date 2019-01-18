@@ -15,13 +15,16 @@ from django.db.models import Count
 
 from dateutil.parser import parse as parsedate
 
-from bedrock.security.models import Product, SecurityAdvisory
+from bedrock.security.models import HallOfFamer, MitreCVE, Product, SecurityAdvisory
 from bedrock.utils.git import GitRepo
 from bedrock.security.utils import (
     FILENAME_RE,
+    check_hof_data,
     mfsa_id_from_filename,
     parse_md_file,
     parse_yml_file,
+    parse_yml_file_base,
+    update_advisory_bugs,
 )
 
 
@@ -31,6 +34,8 @@ ADVISORIES_BRANCH = settings.MOFO_SECURITY_ADVISORIES_BRANCH
 
 SM_RE = re.compile('seamonkey', flags=re.IGNORECASE)
 FNULL = open(os.devnull, 'w')
+HOF_FILES = ['client.yml', 'web.yml']
+HOF_DIRECTORY = 'bug-bounty-hof'
 
 
 def fix_product_name(name):
@@ -100,6 +105,59 @@ def add_or_update_advisory(data, html):
     return advisory
 
 
+def add_hofers(filename, data):
+    check_hof_data(data)
+    program = os.path.basename(filename)[:-4]
+    HallOfFamer.objects.filter(program=program).delete()
+    for hofer in data['names']:
+        HallOfFamer.objects.create(
+            program=program,
+            name=hofer['name'],
+            date=hofer['date'],
+            url=hofer.get('url', ''),
+        )
+
+
+def parse_cve_id(cve_id):
+    cve_year, cve_order = cve_id.split('-')[1:]
+    return int(cve_year), int(cve_order)
+
+
+def add_or_update_cve(data):
+    for cve_id, advisory in data['advisories'].iteritems():
+        if not advisory.get('feed', True):
+            # skip advisories with `feed: false`
+            continue
+
+        cve_year, cve_order = parse_cve_id(cve_id)
+        update_advisory_bugs(advisory)
+        cve_title = advisory.get('cve_problemtype', advisory.get('title')) or ''
+        cve_data = {
+            'id': cve_id,
+            'year': cve_year,
+            'order': cve_order,
+            'title': cve_title,
+            'impact': advisory['impact'] or '',
+            'reporter': advisory['reporter'] or '',
+            'description': advisory['description'] or '',
+            'bugs': advisory['bugs'],
+        }
+        try:
+            cve = MitreCVE.objects.get(id=cve_id)
+        except MitreCVE.DoesNotExist:
+            cve = MitreCVE(**cve_data)
+            cve.products = data['fixed_in']
+            cve.mfsa_ids.append(data['mfsa_id'])
+        else:
+            cve.products = list(set(cve.products).union(data['fixed_in']))
+            cve.mfsa_ids = list(set(cve.mfsa_ids).union([data['mfsa_id']]))
+            for prop, value in cve_data.items():
+                if value:
+                    setattr(cve, prop, value)
+
+        cve.save()
+
+
 def update_db_from_file(filename):
     """
     Parse file for YAML and Markdown and update database.
@@ -108,6 +166,8 @@ def update_db_from_file(filename):
     :param filename: path to markdown file.
     :return: SecurityAdvisory instance
     """
+    if HOF_DIRECTORY in filename:
+        return add_hofers(filename, parse_yml_file_base(filename))
     if filename.endswith('.md'):
         parser = parse_md_file
     elif filename.endswith('.yml'):
@@ -115,11 +175,23 @@ def update_db_from_file(filename):
     else:
         raise RuntimeError('Unknown file type %s' % filename)
 
-    return add_or_update_advisory(*parser(filename))
+    data, html = parser(filename)
+    if 'advisories' in data:
+        add_or_update_cve(data)
+    return add_or_update_advisory(data, html)
 
 
 def get_all_mfsa_files():
     return glob.glob(os.path.join(ADVISORIES_PATH, 'announce', '*', 'mfsa*.*'))
+
+
+def get_all_hof_files():
+    return [os.path.join(ADVISORIES_PATH, HOF_DIRECTORY, fn) for fn in HOF_FILES]
+
+
+def get_all_file_names():
+    """Return every file to process"""
+    return get_all_mfsa_files() + get_all_hof_files()
 
 
 def get_ids_from_files(filenames):
@@ -187,7 +259,8 @@ class Command(NoArgsCommand):
         no_git = options['no_git']
         clear_db = options['clear_db']
         force = no_git or clear_db
-        repo = GitRepo(ADVISORIES_PATH, ADVISORIES_REPO, branch_name=ADVISORIES_BRANCH)
+        repo = GitRepo(ADVISORIES_PATH, ADVISORIES_REPO, branch_name=ADVISORIES_BRANCH,
+                       name='Security Advisories')
 
         def printout(msg, ending=None):
             if not quiet:
@@ -197,6 +270,7 @@ class Command(NoArgsCommand):
             printout('Clearing all security advisories.')
             SecurityAdvisory.objects.all().delete()
             Product.objects.all().delete()
+            MitreCVE.objects.all().delete()
 
         if not no_git:
             printout('Updating repository.')
@@ -208,9 +282,8 @@ class Command(NoArgsCommand):
 
         errors = []
         updates = 0
-        all_files = get_all_mfsa_files()
+        all_files = get_all_file_names()
         for mf in all_files:
-            mf = os.path.join(ADVISORIES_PATH, mf)
             try:
                 update_db_from_file(mf)
             except Exception as e:

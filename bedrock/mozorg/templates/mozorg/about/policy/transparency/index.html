@@ -5,23 +5,18 @@
 {% extends "mozorg/about-base.html" %}
 
 {% block page_title %}{{ _('Transparency') }}{% endblock %}
-{% block body_class %}sand about-transparency{% endblock %}
+{% set body_id = "about-transparency" %}
+{% block body_class %}about-transparency{% endblock %}
 
 {% block page_css %}
-  {% stylesheet 'about-transparency' %}
+  {{ css_bundle('about-transparency') }}
 {% endblock %}
 
 {% block js %}
-  <!--[if IE 9]>
-  {% javascript 'matchmedia_addlistener' %}
-  <![endif]-->
-  {% javascript 'about-transparency' %}
+  {{ js_bundle('about-transparency') }}
 {% endblock %}
 
 {% block content %}
-  <div class="data-header">
-    <img src="{{ static('img/mozorg/about/transparency/hero-transparency.svg') }}" alt="">
-  </div>
   <main role="main">
     <header class="title-bar">
       <div class="content">
@@ -58,14 +53,15 @@
             <div data-accordion-role="tabpanel">
               <p>
                 {# NOTE: Remember to update these links when publishing a new report. #}
-                {% trans
-                  link_userdata=url('mozorg.about.policy.transparency.jan-jun-2017') + '#government-user-data',
-                  link_removal=url('mozorg.about.policy.transparency.jan-jun-2017') + '#government-content-removal',
-                  link_copytrade=url('mozorg.about.policy.transparency.jan-jun-2017') + '#copyright-trademark',
-                  link_supplement=url('mozorg.about.policy.transparency.jan-jun-2017') + '#supplement'
-                %}
-                  We report on <a href="{{ link_userdata }}">Government Demands for User Data</a>, <a href="{{ link_removal }}">Government Requests for Content Removal</a>, and <a href="{{ link_copytrade }}">Copyright and Trademark Requests</a>. We also include a <a href="{{ link_supplement }}">Supplement</a>, which provides additional information.
+                {% set link_userdata=url('mozorg.about.policy.transparency.jan-jun-2018') + '#government-user-data' %}
+                {% set link_removal=url('mozorg.about.policy.transparency.jan-jun-2018') + '#government-content-removal' %}
+                {% set link_copytrade=url('mozorg.about.policy.transparency.jan-jun-2018') + '#copyright-trademark' %}
+                {% set link_supplement=url('mozorg.about.policy.transparency.jan-jun-2018') + '#supplement' %}
+
+                {% trans %}
+                  This report covers the Mozilla Foundation, Mozilla Corporation, and Pocket (from 2018). We report on <a href="{{ link_userdata }}">Government Demands for User Data</a>, <a href="{{ link_removal }}">Government Requests for Content Removal</a>, and <a href="{{ link_copytrade }}">Copyright and Trademark Requests</a>. We also include a <a href="{{ link_supplement }}">Supplement</a>, which provides additional information.
                 {% endtrans %}
+
                 {{ _('With each additional report that we publish, we’ll continue to re­evaluate how we can be more transparent.') }}
               </p>
             </div>
@@ -87,6 +83,29 @@
                 {{ _('Recipients of <a href="%s">National Security Requests</a> can only publish reporting bands instead of specific figures.')|format(url('mozorg.about.policy.transparency.index') + '#dfn-natl-security-request') }}
                 {{ _('If we receive such a request, we may challenge these reporting bands, in addition to opposing any unlawful or overbroad requests.') }}
               </p>
+            </div>
+          </section>
+
+          <section>
+            <h3 data-accordion-role="tab">{{ ('How does Mozilla handle Gag Orders?') }}</h3>
+            <div data-accordion-role="tabpanel">
+              <p>
+                {{ _('We don’t believe it is appropriate for the government to indefinitely delay a company from providing user notice.  We will take steps to enforce this belief for gag orders that meet any of the following criteria:') }}
+              </p>
+
+              <p>
+                {{ _('<strong>Unreasonable Duration</strong> - Any gag order with an unspecified duration or with a duration longer than one year.  This time period may be changed if specific facts in the case lead us to believe that a longer time period is reasonable.  We support policy proposals to codify into a federal statute shorter durations of one year or less, consistent with Section 9-13.700 of the DOJ U.S. Attorneys’ Manual.') }}
+              </p>
+              <p>
+                {{ _('<strong>Unreasonable Scope</strong> - Any gag order that would prevent us from disclosing the existence of legal process in our transparency report.') }}
+              </p>
+              <p>
+                {{ _('<strong>Unreasonable Number of Impacted Users</strong> - Any gag order that appears to affect more than 50 users, or where specific facts suggest that the order affects users we can reasonably determine are unrelated to the activity under investigation, such as users of a shared computer or IP address.') }}
+              </p>
+              <p>
+                {{ _('<strong>Unreasonable Impact on Free Expression</strong> - Specific facts of the case raise free expression issues (such as cases involving journalists or the press). ') }}
+              </p>
+
             </div>
           </section>
 
@@ -167,7 +186,7 @@
       <div class="content">
         <h2 class="section-title">{{ _('Definitions') }}</h2>
 
-        <dl class="simple">
+        <dl class="prose">
           <dt id="dfn-counter-notice">{{ _('Counter Notice') }}</dt>
           <dd>
             <p>{{ _('Documentation that meets the counter notification requirements <a href="%s">set forth here</a> in response to a <a href="%s">Takedown Notice</a>.')|format(url('legal.report-infringement'), url('mozorg.about.policy.transparency.index') + '#dfn-takedown-notice') }}</p>
@@ -206,25 +225,25 @@
           </dd>
 
           <dt id="dfn-natl-security-request">{{ _('National Security Request') }}</dt>
-          <dd>{{ _('A National Security Letter issued under 18 U.S.C.§2709, a Court Order issued under the Foreign Intelligence Surveillance Act or any other classified request for user information issued in the U.S.') }}</dd>
+          <dd><p>{{ _('A National Security Letter issued under 18 U.S.C.§2709, a Court Order issued under the Foreign Intelligence Surveillance Act or any other classified request for user information issued in the U.S.') }}</p></dd>
 
           <dt id="dfn-pen-register-order">{{ _('Pen Register Order') }}</dt>
-          <dd>{{ _('A Pen Register and Trap and Trace Order is a type of U.S. <a href="%s">Court Order</a> compelling a company to disclose data about a user’s real­time communications (excluding the content of the communications themselves) to law enforcement on an ongoing basis, usually for a period of 60 days.')|format('#dfn-court-order') }}</dd>
+          <dd><p>{{ _('A Pen Register and Trap and Trace Order is a type of U.S. <a href="%s">Court Order</a> compelling a company to disclose data about a user’s real­time communications (excluding the content of the communications themselves) to law enforcement on an ongoing basis, usually for a period of 60 days.')|format('#dfn-court-order') }}</p></dd>
 
           <dt id="dfn-search-warrant">{{ _('Search Warrant') }}</dt>
-          <dd>{{ _('A document authorizing law enforcement to obtain user data issued by a neutral and detached magistrate on the basis of finding that “probable cause” exists to believe that the items being sought will be found in the place to be searched.') }}</dd>
+          <dd><p>{{ _('A document authorizing law enforcement to obtain user data issued by a neutral and detached magistrate on the basis of finding that “probable cause” exists to believe that the items being sought will be found in the place to be searched.') }}</p></dd>
 
           <dt id="dfn-specific-user">{{ _('Specific User') }}</dt>
-          <dd>{{ _('An identifiable user of Mozilla’s products and services.') }}</dd>
+          <dd><p>{{ _('An identifiable user of Mozilla’s products and services.') }}</p></dd>
 
           <dt id="dfn-subpoena">{{ _('Subpoena') }}</dt>
-          <dd>{{ _('A formal request for the production of evidence or testimony that can be issued by a government agency or court. Judicial review is not necessarily required.') }}</dd>
+          <dd><p>{{ _('A formal request for the production of evidence or testimony that can be issued by a government agency or court. Judicial review is not necessarily required.') }}</p></dd>
 
           <dt id="dfn-takedown-notice">{{ _('Takedown Notice') }}</dt>
-          <dd>{{ _('Documentation that meets the requirements set forth in our <a href="%s">reporting copyright or trademark infringement page</a>.')|format(url('legal.report-infringement')) }}</dd>
+          <dd><p>{{ _('Documentation that meets the requirements set forth in our <a href="%s">reporting copyright or trademark infringement page</a>.')|format(url('legal.report-infringement')) }}</p></dd>
 
           <dt id="dfn-wiretap-order">{{ _('Wiretap Order') }}</dt>
-          <dd>{{ _('A type of U.S. Court Order compelling a company to disclose the metadata and content of a user’s real­time communications to law enforcement on an ongoing basis, usually for a period of 30 days.') }}</dd>
+          <dd><p>{{ _('A type of U.S. Court Order compelling a company to disclose the metadata and content of a user’s real­time communications to law enforcement on an ongoing basis, usually for a period of 30 days.') }}</p></dd>
         </dl>
       </div>
     </section>

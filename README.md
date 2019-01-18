@@ -1,8 +1,8 @@
-bedrock
+Bedrock
 =======
 
-*bedrock* is the code name of [mozilla.org][mozilla]. It is as shiny,
-awesome, and open sourcy as always. Perhaps even a little more.
+*Bedrock* is the code name of [mozilla.org][mozilla]. It is as shiny,
+awesome, and open source as always. Perhaps even a little more.
 
 [mozilla]: https://www.mozilla.org/
 
@@ -23,7 +23,7 @@ Contributing
 ------------
 
 Patches are welcome! Feel free to fork and contribute to this project on
-[github][gh-bedrock]. If you find a problem and wish to report it, please [file
+[GitHub][gh-bedrock]. If you find a problem and wish to report it, please [file
 a bug][bugzilla].
 
 Looking for a good first bug to work on? Take a look at the [wiki page][wiki] for a
@@ -37,7 +37,7 @@ Code of Conduct
 ---------------
 
 This repository is governed by Mozilla's code of conduct and etiquette guidelines.
-For more details please see the [Mozilla Community Participation Guidelines][participation]
+For more details, please see the [Mozilla Community Participation Guidelines][participation]
 and [Developer Etiquette Guidelines][etiquette].
 
 [participation]: https://www.mozilla.org/about/governance/policies/participation/

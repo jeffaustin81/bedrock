@@ -20,12 +20,12 @@
 {% block body_attrs %}{{ super() }} data-global-nav-current-link="internet-health"{% endblock %}
 
 {% block page_css %}
-  {% stylesheet 'internet-health-hub' %}
+  {{ css_bundle('internet-health-hub') }}
 {% endblock %}
 
 {% block site_header %}
   {% if LANG.startswith('en-') %}
-    {% include 'includes/global-nav.html' %}
+    {% include 'includes/protocol/navigation/index.html' %}
   {% else %}
     {% set logo_src = static('img/pebbles/moz-wordmark-dark-reverse.svg') %}
     {% include 'mozorg/home/includes/nav.html' %}
@@ -33,7 +33,9 @@
 {% endblock %}
 
 {% block content %}
-{% include 'mozorg/internet-health/includes/sub-nav.html' %}
+{% with current='about' %}
+  {% include 'mozorg/internet-health/includes/sub-nav.html' %}
+{% endwith %}
 
 <main role="main">
   <header class="header-intro">
@@ -44,6 +46,36 @@
       </div>
     </div>
   </header>
+
+{% if l10n_has_tag('health_hub_data_detox_kit') %}
+  <section class="data-detox-kit">
+    <div class="content">
+      <div class="card-image-large">
+        <h2 class="section-title"><span>{{ _('Data Detox Kit') }}</span></h2>
+
+        <div class="card-content-wrapper">
+          <div class="card-content">
+            <a href="https://blog.mozilla.org/internetcitizen/2017/11/08/data-detox/?utm_source=www.mozilla.org&amp;utm_medium=referral&amp;utm_campaign=ih-content-hub" data-link-name="Get your digital cleanse" data-link-type="link" data-link-position="data-detox-kit">
+              {# L10n: if the term "Get your digital cleanse" does not translate easily, an alternative line of copy could be "Refresh your digital life". #}
+              <h3 class="card-heading">{{ _('Get your digital cleanse') }}</h3>
+            </a>
+
+            <p>
+            {% trans %}
+              Fight toxic data buildup and eliminate anxiety over shared online info.
+              In a few easy steps, you’ll be on your way to a healthier and more in-control digital self.
+            {% endtrans %}
+            </p>
+
+            <a href="https://blog.mozilla.org/internetcitizen/2017/11/08/data-detox/?utm_source=www.mozilla.org&amp;utm_medium=referral&amp;utm_campaign=ih-content-hub" class="cta-link" data-link-name="Get your digital cleanse" data-link-type="link" data-link-position="data-detox-kit">
+              {{ _('Get started') }}
+            </a>
+          </div>
+        </div> {#--/.card-content-wrapper--#}
+      </div>
+    </div> {#--/.content--#}
+  </section> {#--/.data-detok-kit--#}
+{% endif %}
 
 {% if l10n_has_tag('health_hub_common_voice') %}
   <section class="common-voice">
@@ -72,7 +104,6 @@
       </div>
     </div> {#--/.content--#}
   </section> {#--/.common-voice--#}
-
 {% else %}
 
   <section class="net-neutrality">
@@ -113,12 +144,12 @@
   <section class="section issues">
     <div class="content">
       {% set issues = [
-        (_('Decentralization'), _('Choice is a good thing'), _('Name 5 websites you visit daily. Now 10, 20 or even 30. Tricky, right? When a few big companies “own” the Internet, choice can be limited, but you don’t have to be.'), _('Browse independently'), url('mozorg.internet-health.decentralization'), 'mozorg/internet-health/hub/issue-decentralization.png'),
         (_('Internet Privacy'), _('Internet’s got trust issues'), _('Privacy shouldn’t be a privilege. In fact, the Internet only stays healthy if we trust it as a safe place – to explore, transact, connect and create.'), _('Help build a safer Internet'), url('mozorg.internet-health.privacy-security'), 'mozorg/internet-health/hub/issue-privacy.png'),
         (_('Digital Inclusion'), _('Let’s Internet better, together'), _('More than 50% of the world is still offline. This means we have 50% more creativity and innovation to nurture. Now, how great is that!'), _('More about Digital Inclusion'), url('mozorg.internet-health.digital-inclusion'), 'mozorg/internet-health/hub/issue-inclusion.png'),
         (_('Web Literacy'), _('Citizens of the Internet'), _('Calling the creators of today’s Internet - AKA you! Learn how to protect your creativity, privacy and independence online.'), _('Check out Web Literacy'), url('mozorg.internet-health.web-literacy'), 'mozorg/internet-health/hub/issue-web-literacy.png'),
         (_('Openness'), _('Innovation is for everyone'), _('The Internet was built on the promise that any one of us might create the next big thing. Help keep the creativity flowing!'), _('Support Internet Openness'), url('mozorg.internet-health.open-innovation'), 'mozorg/internet-health/hub/issue-openness.png'),
-      ] | shuffle -%}
+        (_('Decentralization'), _('Choice is a good thing'), _('Name 5 websites you visit daily. Now 10, 20 or even 30. Tricky, right? When a few big companies “own” the Internet, choice can be limited, but you don’t have to be.'), _('Browse independently'), url('mozorg.internet-health.decentralization'), 'mozorg/internet-health/hub/issue-decentralization.png'),
+      ] -%}
 
       <div class="cards-container is-five-cards">
         {% for value, title, intro, link, url, image in issues %}
@@ -177,5 +208,5 @@
 {% block email_form %}{% endblock %}
 
 {% block js %}
-  {% javascript 'internet-health-hub' %}
+  {{ js_bundle('internet-health-hub') }}
 {% endblock %}

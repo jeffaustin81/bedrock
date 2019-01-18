@@ -70,17 +70,242 @@ describe('core-datalayer.js', function() {
     describe('getLatestFxVersion', function() {
 
         afterEach(function() {
-            $('html').removeData('latest-firefox');
+            document.getElementsByTagName('html')[0].removeAttribute('data-latest-firefox');
         });
 
         it('will return the Firefox version from the data-latest-firefox attribute from the html element if present', function() {
-            $('html').data('latest-firefox', '48.0');
+            document.getElementsByTagName('html')[0].setAttribute('data-latest-firefox', '48.0');
 
             expect(Mozilla.Analytics.getLatestFxVersion()).toBe('48.0');
         });
 
-        it('will return undefined if no data-latest-firefox attribute is present on the html element', function() {
-            expect(Mozilla.Analytics.getLatestFxVersion()).toBeUndefined();
+        it('will return null if no data-latest-firefox attribute is present on the html element', function() {
+            expect(Mozilla.Analytics.getLatestFxVersion()).toBe(null);
+        });
+    });
+
+    describe('formatFxaDetails', function() {
+
+        it('will correctly format FxA data returned from UITour', function() {
+
+            // Current Firefox Desktop, not logged in
+            var input1 = {
+                'firefox': true,
+                'legacy': false,
+                'mobile': false,
+                'setup': false,
+                'desktopDevices': false,
+                'mobileDevices': false
+            };
+
+            var output1 = {
+                FxALogin: false,
+                FxASegment: 'Not logged in',
+            };
+
+            // Current Firefox Desktop, logged in, 1 desktop configured
+            var input2 = {
+                'firefox': true,
+                'legacy': false,
+                'mobile': false,
+                'setup': true,
+                'desktopDevices': 1,
+                'mobileDevices': 0
+            };
+
+            var output2 = {
+                FxALogin: true,
+                FxAMultiDesktopSync: false,
+                FxAMobileSync: false,
+                FxASegment: 'Logged in'
+            };
+
+            // Current Firefox Desktop, logged in, 2 desktops configured
+            var input3 = {
+                'firefox': true,
+                'legacy': false,
+                'mobile': false,
+                'setup': true,
+                'desktopDevices': 2,
+                'mobileDevices': 0
+            };
+
+            var output3 = {
+                FxALogin: true,
+                FxAMultiDesktopSync: true,
+                FxAMobileSync: false,
+                FxASegment: 'Multi-Desktop Sync'
+            };
+
+            // Current Firefox Desktop, logged in, 1 desktops 1 mobile configured
+            var input4 = {
+                'firefox': true,
+                'legacy': false,
+                'mobile': false,
+                'setup': true,
+                'desktopDevices': 1,
+                'mobileDevices': 1
+            };
+
+            var output4 = {
+                FxALogin: true,
+                FxAMultiDesktopSync: false,
+                FxAMobileSync: true,
+                FxASegment: 'Desktop and Mobile Sync'
+            };
+
+            // Current Firefox Desktop, logged in, 2 desktops 1 mobile configured
+            var input5 = {
+                'firefox': true,
+                'legacy': false,
+                'mobile': false,
+                'setup': true,
+                'desktopDevices': 2,
+                'mobileDevices': 1
+            };
+
+            var output5 = {
+                FxALogin: true,
+                FxAMultiDesktopSync: true,
+                FxAMobileSync: true,
+                FxASegment: 'Multi-Desktop and Mobile Sync'
+            };
+
+            // Firefox Desktop < 50, logged in to FxA
+            var input6 = {
+                'firefox': true,
+                'legacy': false,
+                'mobile': false,
+                'setup': true,
+                'desktopDevices': 'unknown',
+                'mobileDevices': 'unknown'
+            };
+
+            var output6 = {
+                FxALogin: true,
+                FxAMobileSync:  'unknown',
+                FxAMultiDesktopSync: 'unknown',
+                FxASegment: 'Logged in'
+            };
+
+            // Firefox Desktop < 50, logged out
+            var input7 = {
+                'firefox': true,
+                'legacy': false,
+                'mobile': false,
+                'setup': false,
+                'desktopDevices': false,
+                'mobileDevices': false
+            };
+
+            var output7 = {
+                FxALogin: false,
+                FxASegment: 'Not logged in'
+            };
+
+            // Firefox Desktop < FxALastSupported, logged in
+            var input8 = {
+                'firefox': true,
+                'legacy': true,
+                'mobile': false,
+                'setup': true,
+                'desktopDevices': 'unknown',
+                'mobileDevices': 'unknown'
+            };
+
+            var output8 = {
+                FxALogin: true,
+                FxAMobileSync:  'unknown',
+                FxAMultiDesktopSync: 'unknown',
+                FxASegment: 'Legacy Firefox',
+            };
+
+            // Firefox Desktop < FxALastSupported, logged out
+            var input9 = {
+                'firefox': true,
+                'legacy': true,
+                'mobile': false,
+                'setup': false,
+                'desktopDevices': false,
+                'mobileDevices': false
+            };
+
+            var output9 = {
+                FxALogin: 'unknown',
+                FxASegment: 'Legacy Firefox',
+            };
+
+            // Firefox Desktop < 29
+            var input10 = {
+                'firefox': true,
+                'legacy': true,
+                'mobile': false,
+                'setup': false,
+                'desktopDevices': false,
+                'mobileDevices': false
+            };
+
+            var output10 = {
+                FxALogin: 'unknown',
+                FxASegment: 'Legacy Firefox'
+            };
+
+            // Firefox Android
+            var input11 = {
+                'firefox': true,
+                'legacy': false,
+                'mobile': 'android',
+                'setup': false,
+                'desktopDevices': false,
+                'mobileDevices': false
+            };
+
+            var output11 = {
+                FxASegment: 'Firefox Mobile'
+            };
+
+            // Firefox iOS
+            var input12 = {
+                'firefox': true,
+                'legacy': false,
+                'mobile': 'ios',
+                'setup': false,
+                'desktopDevices': false,
+                'mobileDevices': false
+            };
+
+            var output12 = {
+                FxASegment: 'Firefox Mobile'
+            };
+
+            // Not Firefox
+            var input13 = {
+                'firefox': false,
+                'legacy': false,
+                'mobile': false,
+                'setup': false,
+                'desktopDevices': false,
+                'mobileDevices': false
+            };
+
+            var output13 = {
+                FxASegment: 'Not Firefox'
+            };
+
+            // we could do a loop for this but then we loose line specific error reporting
+            expect(Mozilla.Analytics.formatFxaDetails(input1)).toEqual(output1);
+            expect(Mozilla.Analytics.formatFxaDetails(input2)).toEqual(output2);
+            expect(Mozilla.Analytics.formatFxaDetails(input3)).toEqual(output3);
+            expect(Mozilla.Analytics.formatFxaDetails(input4)).toEqual(output4);
+            expect(Mozilla.Analytics.formatFxaDetails(input5)).toEqual(output5);
+            expect(Mozilla.Analytics.formatFxaDetails(input6)).toEqual(output6);
+            expect(Mozilla.Analytics.formatFxaDetails(input7)).toEqual(output7);
+            expect(Mozilla.Analytics.formatFxaDetails(input8)).toEqual(output8);
+            expect(Mozilla.Analytics.formatFxaDetails(input9)).toEqual(output9);
+            expect(Mozilla.Analytics.formatFxaDetails(input10)).toEqual(output10);
+            expect(Mozilla.Analytics.formatFxaDetails(input11)).toEqual(output11);
+            expect(Mozilla.Analytics.formatFxaDetails(input12)).toEqual(output12);
+            expect(Mozilla.Analytics.formatFxaDetails(input13)).toEqual(output13);
         });
     });
 
@@ -96,7 +321,7 @@ describe('core-datalayer.js', function() {
         });
 
         afterEach(function() {
-            $('body').remove('#link');
+            $('#link').remove();
             delete window.dataLayer;
         });
 

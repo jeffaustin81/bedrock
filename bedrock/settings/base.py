@@ -11,10 +11,10 @@ from os.path import abspath
 from django.utils.functional import lazy
 
 import dj_database_url
-from decouple import Csv, config
+from everett.manager import ListOf
 from pathlib2 import Path
 
-from .static_media import PIPELINE_CSS, PIPELINE_JS  # noqa
+from bedrock.base.config_manager import config
 
 
 # ROOT path of the project. A pathlib.Path object.
@@ -27,32 +27,18 @@ def path(*args):
 
 
 # Is this a dev instance?
-DEV = config('DEV', cast=bool, default=False)
-PROD = config('PROD', cast=bool, default=False)
+DEV = config('DEV', parser=bool, default='false')
+PROD = config('PROD', parser=bool, default='false')
 
-DEBUG = config('DEBUG', cast=bool, default=False)
+DEBUG = config('DEBUG', parser=bool, default='false')
 
-# Production uses PostgreSQL, but Sqlite should be sufficient for local development.
-db_url = config('DATABASE_URL', default='sqlite:///bedrock.db')
 DATABASES = {
-    # leave 'default' empty so that Django will start even
-    # if it can't connect to the DB at boot time
-    'default': {},
-    'bedrock': dj_database_url.parse(db_url)
+    'default': dj_database_url.parse('sqlite:///bedrock.db'),
 }
-if db_url.startswith('sqlite'):
-    # no server, can use 'default'
-    DATABASES['default'] = DATABASES['bedrock']
-    # leave the config in 'bedrock' as well so scripts
-    # hardcoded for 'bedrock' will continue to work
-else:
-    # settings specific to db server environments
-    DATABASES['bedrock']['CONN_MAX_AGE'] = None
-    DATABASE_ROUTERS = ['bedrock.base.database.BedrockRouter']
 
 CACHES = config(
     'CACHES',
-    cast=json.loads,
+    parser=json.loads,
     default=json.dumps(
         {'default': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
@@ -96,7 +82,7 @@ USE_L10N = True
 
 USE_TZ = True
 
-USE_ETAGS = config('USE_ETAGS', default=not DEBUG, cast=bool)
+USE_ETAGS = config('USE_ETAGS', default=str(not DEBUG), parser=bool)
 
 # just here so Django doesn't complain
 TEST_RUNNER = 'django.test.runner.DiscoverRunner'
@@ -113,9 +99,8 @@ PROD_DETAILS_URL = config('PROD_DETAILS_URL',
 # This ultimately controls how LANGUAGES are constructed.
 PROD_DETAILS_CACHE_NAME = 'product-details'
 PROD_DETAILS_CACHE_TIMEOUT = 60 * 15  # 15 min
-default_pdstorage = 'PDDatabaseStorage' if PROD else 'PDFileStorage'
 PROD_DETAILS_STORAGE = config('PROD_DETAILS_STORAGE',
-                              default='product_details.storage.' + default_pdstorage)
+                              default='product_details.storage.PDDatabaseStorage')
 # path into which to clone the p-d json repo
 PROD_DETAILS_JSON_REPO_PATH = config('PROD_DETAILS_JSON_REPO_PATH',
                                      default=path('product_details_json'))
@@ -130,22 +115,41 @@ if Path(PROD_DETAILS_TEST_DIR).is_dir():
 # Accepted locales
 PROD_LANGUAGES = ('ach', 'af', 'an', 'ar', 'as', 'ast', 'az', 'azz', 'be', 'bg',
                   'bn-BD', 'bn-IN', 'br', 'bs', 'ca', 'cak', 'cs',
-                  'cy', 'da', 'de', 'dsb', 'el', 'en-GB', 'en-US',
+                  'cy', 'da', 'de', 'dsb', 'el', 'en-CA', 'en-GB', 'en-US',
                   'en-ZA', 'eo', 'es-AR', 'es-CL', 'es-ES', 'es-MX', 'et',
                   'eu', 'fa', 'ff', 'fi', 'fr', 'fy-NL', 'ga-IE', 'gd',
                   'gl', 'gn', 'gu-IN', 'he', 'hi-IN', 'hr', 'hsb',
-                  'hu', 'hy-AM', 'id', 'is', 'it', 'ja', 'ja-JP-mac',
+                  'hu', 'hy-AM', 'ia', 'id', 'is', 'it', 'ja', 'ja-JP-mac',
                   'ka', 'kab', 'kk', 'km', 'kn', 'ko', 'lij', 'lt', 'ltg', 'lv',
                   'mai', 'mk', 'ml', 'mr', 'ms', 'my', 'nb-NO', 'ne-NP', 'nl',
                   'nn-NO', 'oc', 'or', 'pa-IN', 'pl', 'pt-BR', 'pt-PT',
                   'rm', 'ro', 'ru', 'si', 'sk', 'sl', 'son', 'sq',
-                  'sr', 'sv-SE', 'ta', 'te', 'th', 'tr', 'trs', 'uk', 'ur',
+                  'sr', 'sv-SE', 'ta', 'te', 'th', 'tl', 'tr', 'trs', 'uk', 'ur',
                   'uz', 'vi', 'xh', 'zh-CN', 'zh-TW', 'zu')
 
 LOCALES_PATH = ROOT_PATH / 'locale'
 default_locales_repo = 'www.mozilla.org' if DEV else 'bedrock-l10n'
 default_locales_repo = 'https://github.com/mozilla-l10n/{}'.format(default_locales_repo)
 LOCALES_REPO = config('LOCALES_REPO', default=default_locales_repo)
+GITHUB_REPO = 'https://github.com/mozilla/bedrock'
+
+# templates to exclude from having an "edit this page" link in the footer
+# these are typically ones for which most of the content is in the DB
+EXCLUDE_EDIT_TEMPLATES = [
+    'firefox/releases/nightly-notes.html',
+    'firefox/releases/dev-browser-notes.html',
+    'firefox/releases/esr-notes.html',
+    'firefox/releases/beta-notes.html',
+    'firefox/releases/aurora-notes.html',
+    'firefox/releases/release-notes.html',
+    'firefox/releases/system_requirements.html',
+    'mozorg/credits.html',
+    'mozorg/about/forums.html',
+    'security/advisory.html',
+    'security/advisories.html',
+    'security/product-advisories.html',
+    'security/known-vulnerabilities.html',
+]
 
 
 def get_dev_languages():
@@ -248,6 +252,8 @@ SUPPORTED_NONLOCALES = [
     'webmaker',
     'contributor-data',
     'healthz',
+    'readiness',
+    'healthz-cron',
     '2004',
     '2005',
     '2006',
@@ -256,6 +262,8 @@ SUPPORTED_NONLOCALES = [
     'xbl',
     'csp-violation-capture',
     'country-code.json',
+    'revision.txt',
+    'locales',
 ]
 
 # Pages that we don't want to be indexed by search engines.
@@ -263,7 +271,6 @@ SUPPORTED_NONLOCALES = [
 # specific URLs, add them to mozorg/templates/mozorg/robots.txt.
 NOINDEX_URLS = [
     r'^(404|500)/',
-    r'^about/partnerships/contact-bizdev/',
     r'^contribute/(embed|event)/',
     r'^csp-violation-capture',
     r'^firefox/sms/sent/',
@@ -271,21 +278,21 @@ NOINDEX_URLS = [
     r'^firefox/send-to-device-post',
     r'^firefox/feedback',
     r'^firefox/stub_attribution_code/',
+    r'^firefox.*/all/$',
+    r'^.+/tracking-protection/start/$',
     r'^.+/(firstrun|whatsnew)/$',
-    r'^infobar/',
     r'^l10n_example/',
     r'^m/',
     r'^newsletter/(confirm|existing|hacks\.mozilla\.org|recovery|updated)/',
-    r'^tabzilla/',
     r'/system-requirements/$',
     r'.*/(firstrun|thanks)/$',
-    r'^healthz/$',
+    r'^readiness/$',
+    r'^healthz(-cron)?/$',
     r'^country-code\.json$',
     # exclude redirects
     r'^foundation/annualreport/$'
     r'^firefox/notes/$'
     r'^teach/$'
-    r'^thunderbird/(release)?notes/$'
     r'^about/legal/impressum/$',
     r'^security/announce/',
     r'^etc/',
@@ -293,10 +300,10 @@ NOINDEX_URLS = [
 
 # Pages we do want indexed but don't show up in automated URL discovery
 # or are only available in a non-default locale
-EXTRA_INDEX_URLS = [
-    '/de/privacy/firefox-klar/',
-    '/de/about/legal/impressum/',
-]
+EXTRA_INDEX_URLS = {
+    '/privacy/firefox-klar/': ['de'],
+    '/about/legal/impressum/': ['de'],
+}
 
 # Pages that have different URLs for different locales, e.g.
 #   'firefox/private-browsing/': {
@@ -305,8 +312,9 @@ EXTRA_INDEX_URLS = [
 ALT_CANONICAL_PATHS = {}
 
 ALLOWED_HOSTS = config(
-    'ALLOWED_HOSTS', cast=Csv(),
+    'ALLOWED_HOSTS', parser=ListOf(str),
     default='www.mozilla.org,www.ipv6.mozilla.org,www.allizom.org')
+ALLOWED_CIDR_NETS = config('ALLOWED_CIDR_NETS', default='', parser=ListOf(str))
 
 # The canonical, production URL without a trailing slash
 CANONICAL_URL = 'https://www.mozilla.org'
@@ -318,44 +326,14 @@ MEDIA_URL = config('MEDIA_URL', default='/user-media/')
 MEDIA_ROOT = config('MEDIA_ROOT', default=path('media'))
 STATIC_URL = config('STATIC_URL', default='/media/')
 STATIC_ROOT = config('STATIC_ROOT', default=path('static'))
-STATICFILES_STORAGE = ('pipeline.storage.NonPackagingPipelineStorage' if DEBUG else
-                       'bedrock.base.pipeline_storage.ManifestPipelineStorage')
+STATICFILES_STORAGE = ('django.contrib.staticfiles.storage.StaticFilesStorage' if DEBUG else
+                       'django.contrib.staticfiles.storage.ManifestStaticFilesStorage')
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-    'pipeline.finders.CachedFileFinder',
-    'pipeline.finders.PipelineFinder',
 )
 STATICFILES_DIRS = (
-    path('media'),
+    path('static_final'),
 )
-
-PIPELINE = {
-    'STYLESHEETS': PIPELINE_CSS,
-    'JAVASCRIPT': PIPELINE_JS,
-    'DISABLE_WRAPPER': True,
-    'SHOW_ERRORS_INLINE': False,
-    'COMPILERS': (
-        'pipeline.compilers.less.LessCompiler',
-        'pipeline.compilers.sass.SASSCompiler',
-    ),
-    'SASS_BINARY': config('PIPELINE_SASS_BINARY',
-                          default=path('node_modules', '.bin', 'node-sass')),
-    'SASS_ARGUMENTS': config('PIPELINE_SASS_ARGUMENTS', default=''),
-    'LESS_BINARY': config('PIPELINE_LESS_BINARY',
-                          default=path('node_modules', 'less', 'bin', 'lessc')),
-    'LESS_ARGUMENTS': config('PIPELINE_LESS_ARGUMENTS', default='-s'),
-    'JS_COMPRESSOR': 'pipeline.compressors.uglifyjs.UglifyJSCompressor',
-    'UGLIFYJS_BINARY': config('PIPELINE_UGLIFYJS_BINARY',
-                              default=path('node_modules', '.bin', 'uglifyjs')),
-    'UGLIFYJS_ARGUMENTS': config('PIPELINE_UGLIFYJS_ARGUMENTS', default='--support-ie8'),
-    'CSS_COMPRESSOR': 'bedrock.base.pipeline_compressors.CleanCSSCompressor',
-    'CLEANCSS_BINARY': config('PIPELINE_CLEANCSS_BINARY',
-                              default=path('node_modules', '.bin', 'cleancss')),
-    'CLEANCSS_ARGUMENTS': config('PIPELINE_CLEANCSS_ARGUMENTS', default='--compatibility ie7'),
-    'PIPELINE_ENABLED': config('PIPELINE_ENABLED', not DEBUG, cast=bool),
-    'PIPELINE_COLLECTOR_ENABLED': config('PIPELINE_COLLECTOR_ENABLED', not DEBUG, cast=bool),
-}
 
 
 def set_whitenoise_headers(headers, path, url):
@@ -389,18 +367,35 @@ PUENTE = {
     }
 }
 
+
+def get_app_name(hostname):
+    """
+    Get the app name from the host name.
+
+    The hostname in our deployments will be in the form `bedrock-{version}-{type}-{random-ID}`
+    where {version} is "dev", "stage", or "prod", and {type} is the process type
+    (e.g. "web" or "clock"). Everywhere else it won't be in this form and will return None.
+    """
+    if hostname.startswith('bedrock-'):
+        app_mode = hostname.split('-')[1]
+        return 'bedrock-' + app_mode
+
+    return None
+
+
 HOSTNAME = platform.node()
-DEIS_APP = config('DEIS_APP', default=None)
-DEIS_DOMAIN = config('DEIS_DOMAIN', default=None)
+APP_NAME = get_app_name(HOSTNAME)
+CLUSTER_NAME = config('CLUSTER_NAME', default='')
 ENABLE_HOSTNAME_MIDDLEWARE = config('ENABLE_HOSTNAME_MIDDLEWARE',
-                                    default=bool(DEIS_APP), cast=bool)
+                                    default=str(bool(APP_NAME)), parser=bool)
 ENABLE_VARY_NOCACHE_MIDDLEWARE = config('ENABLE_VARY_NOCACHE_MIDDLEWARE',
-                                        default=True, cast=bool)
+                                        default='true', parser=bool)
 # set this to enable basic auth for the entire site
 # e.g. BASIC_AUTH_CREDS="thedude:thewalrus"
-BASIC_AUTH_CREDS = config('BASIC_AUTH_CREDS', default=None)
+BASIC_AUTH_CREDS = config('BASIC_AUTH_CREDS', default='')
 
 MIDDLEWARE_CLASSES = [
+    'allow_cidr.middleware.AllowCIDRMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'bedrock.mozorg.middleware.MozorgRequestTimingMiddleware',
     'django_statsd.middleware.GraphiteMiddleware',
@@ -409,17 +404,16 @@ MIDDLEWARE_CLASSES = [
     'bedrock.base.middleware.BasicAuthMiddleware',
     # must come before LocaleURLMiddleware
     'bedrock.redirects.middleware.RedirectsMiddleware',
-    'bedrock.tabzilla.middleware.TabzillaLocaleURLMiddleware',
+    'bedrock.base.middleware.LocaleURLMiddleware',
     'commonware.middleware.RobotsTagHeader',
     'bedrock.mozorg.middleware.ClacksOverheadMiddleware',
     'bedrock.mozorg.middleware.HostnameMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'bedrock.mozorg.middleware.CacheMiddleware',
-    'dnt.middleware.DoNotTrackMiddleware',
 ]
 
-ENABLE_CSP_MIDDLEWARE = config('ENABLE_CSP_MIDDLEWARE', default=True, cast=bool)
+ENABLE_CSP_MIDDLEWARE = config('ENABLE_CSP_MIDDLEWARE', default='true', parser=bool)
 if ENABLE_CSP_MIDDLEWARE:
     MIDDLEWARE_CLASSES.append('csp.middleware.CSPMiddleware')
 
@@ -443,36 +437,32 @@ INSTALLED_APPS = (
     'django_jinja_markdown',
     'django_statsd',
     'pagedown',
-    'pipeline',
     'localflavor',
     'django_jinja',
     'raven.contrib.django.raven_compat',
+    'watchman',
 
     # Local apps
     'bedrock.base',
-    'bedrock.lightbeam',
     'bedrock.firefox',
     'bedrock.foundation',
     'bedrock.grants',
-    'bedrock.infobar',
     'bedrock.legal',
     'bedrock.mozorg',
     'bedrock.newsletter',
     'bedrock.press',
     'bedrock.privacy',
     'bedrock.styleguide',
-    'bedrock.tabzilla',
-    'bedrock.teach',
     'bedrock.externalfiles',
     'bedrock.security',
     'bedrock.events',
     'bedrock.releasenotes',
-    'bedrock.thunderbird',
     'bedrock.shapeoftheweb',
     'bedrock.utils',
     'bedrock.wordpress',
     'bedrock.sitemaps',
     'bedrock.etc',
+    'bedrock.pocketfeed',
     # last so that redirects here will be last
     'bedrock.redirects',
 
@@ -491,12 +481,9 @@ VARY_NOCACHE_EXEMPT_URL_PREFIXES = (
     '/contribute/',
     '/about/',
     '/contact/',
-    '/thunderbird/',
     '/newsletter/',
     '/privacy/',
     '/foundation/',
-    '/teach/',
-    '/lightbeam/',
 )
 
 # Sessions
@@ -507,18 +494,26 @@ SESSION_COOKIE_SECURE = not DEBUG
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 
 # legacy setting. backward compat.
-DISABLE_SSL = config('DISABLE_SSL', default=True, cast=bool)
+DISABLE_SSL = config('DISABLE_SSL', default='true', parser=bool)
 # SecurityMiddleware settings
-SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', default='0', cast=int)
+SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', default='0', parser=int)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False
-SECURE_BROWSER_XSS_FILTER = config('SECURE_BROWSER_XSS_FILTER', default=True, cast=bool)
-SECURE_CONTENT_TYPE_NOSNIFF = config('SECURE_CONTENT_TYPE_NOSNIFF', default=True, cast=bool)
-SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=not DISABLE_SSL, cast=bool)
+SECURE_BROWSER_XSS_FILTER = config('SECURE_BROWSER_XSS_FILTER', default='true', parser=bool)
+SECURE_CONTENT_TYPE_NOSNIFF = config('SECURE_CONTENT_TYPE_NOSNIFF', default='true', parser=bool)
+SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=str(not DISABLE_SSL), parser=bool)
 SECURE_REDIRECT_EXEMPT = [
-    r'^healthz/$',
+    r'^readiness/$',
+    r'^healthz(-cron)?/$',
 ]
-if config('USE_SECURE_PROXY_HEADER', default=SECURE_SSL_REDIRECT, cast=bool):
+if config('USE_SECURE_PROXY_HEADER', default=str(SECURE_SSL_REDIRECT), parser=bool):
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# watchman
+WATCHMAN_DISABLE_APM = True
+WATCHMAN_CHECKS = (
+    'watchman.checks.caches',
+    'watchman.checks.databases',
+)
 
 LOCALE_PATHS = (
     str(LOCALES_PATH),
@@ -562,7 +557,6 @@ TEMPLATES = [
                 'lib.l10n_utils.template.l10n_blocks',
                 'lib.l10n_utils.template.lang_blocks',
                 'django_jinja_markdown.extensions.MarkdownExtension',
-                'pipeline.jinja2.PipelineExtension',
             ],
         }
     },
@@ -618,6 +612,11 @@ TWITTER_APP_KEYS = {
     'access_token_secret': config('TWITTER_ACCESS_TOKEN_SECRET', default=''),
 }
 
+# used to connect to @MozillaHQ Pocket account
+POCKET_API_URL = config('POCKET_API_URL', default='https://getpocket.com/v3/firefox/profile-recs')
+POCKET_CONSUMER_KEY = config('POCKET_CONSUMER_KEY', default='')
+POCKET_ACCESS_TOKEN = config('POCKET_ACCESS_TOKEN', default='')
+
 # Contribute numbers
 # TODO: automate these
 CONTRIBUTE_NUMBERS = {
@@ -627,77 +626,45 @@ CONTRIBUTE_NUMBERS = {
 
 BASKET_URL = config('BASKET_URL', default='https://basket.mozilla.org')
 BASKET_API_KEY = config('BASKET_API_KEY', default='')
-BASKET_TIMEOUT = config('BASKET_TIMEOUT', cast=int, default=10)
+BASKET_TIMEOUT = config('BASKET_TIMEOUT', parser=int, default='10')
 
 BOUNCER_URL = config('BOUNCER_URL', default='https://download.mozilla.org/')
-
-# This prefixes /b/ on all URLs generated by `reverse` so that links
-# work on the dev site while we have a mix of Python/PHP
-FORCE_SLASH_B = False
 
 # reCAPTCHA keys
 RECAPTCHA_PUBLIC_KEY = config('RECAPTCHA_PUBLIC_KEY', default='')
 RECAPTCHA_PRIVATE_KEY = config('RECAPTCHA_PRIVATE_KEY', default='')
-RECAPTCHA_USE_SSL = config('RECAPTCHA_USE_SSL', cast=bool, default=True)
+RECAPTCHA_USE_SSL = config('RECAPTCHA_USE_SSL', parser=bool, default='true')
 
 # Use a message storage mechanism that doesn't need a database.
 # This can be changed to use session once we do add a database.
 MESSAGE_STORAGE = 'django.contrib.messages.storage.cookie.CookieStorage'
 
 
-def lazy_email_backend():
-    'Needed in case DEBUG is enabled in local.py instead of environment variable'
-    from django.conf import settings
-    return ('django.core.mail.backends.console.EmailBackend' if settings.DEBUG else
-            'django.core.mail.backends.smtp.EmailBackend')
+default_email_backend = ('django.core.mail.backends.console.EmailBackend' if DEBUG else
+                         'django.core.mail.backends.smtp.EmailBackend')
 
-
-EMAIL_BACKEND = config('EMAIL_BACKEND', default=lazy(lazy_email_backend, str)())
+EMAIL_BACKEND = config('EMAIL_BACKEND', default=default_email_backend)
 EMAIL_HOST = config('EMAIL_HOST', default='localhost')
-EMAIL_PORT = config('EMAIL_PORT', default=25, cast=int)
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=False, cast=bool)
+EMAIL_PORT = config('EMAIL_PORT', default='25', parser=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default='false', parser=bool)
 EMAIL_SUBJECT_PREFIX = config('EMAIL_SUBJECT_PREFIX', default='[bedrock] ')
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 
-# special value that means all locales are enabled.
-STUB_INSTALLER_ALL = '__ALL__'
-# values should be a list of lower case locales per platform for which a
-# stub installer is available. Hopefully this can all be moved to bouncer.
-# for release and beta
-STUB_INSTALLER_LOCALES = {
-    'release': {
-        'win': STUB_INSTALLER_ALL,
-        'win64': STUB_INSTALLER_ALL,
-    },
-    'beta': {
-        'win': STUB_INSTALLER_ALL,
-        'win64': STUB_INSTALLER_ALL,
-    },
-    'alpha': {
-        'win': STUB_INSTALLER_ALL,
-        'win64': STUB_INSTALLER_ALL,
-    },
-    'nightly': {
-        'win': STUB_INSTALLER_ALL,
-        'win64': STUB_INSTALLER_ALL,
-    },
-}
-
 # Google Analytics
 GA_ACCOUNT_CODE = ''
 
-# Files from The Web[tm]
+EXTERNAL_FILES_PATH = config('EXTERNAL_FILES_PATH', default=path('community_data'))
+EXTERNAL_FILES_BRANCH = config('EXTERNAL_FILES_BRANCH', default='master')
+EXTERNAL_FILES_REPO = config('EXTERNAL_FILES_REPO', default='https://github.com/mozilla/community-data.git')
 EXTERNAL_FILES = {
     'credits': {
-        'url': 'https://raw.githubusercontent.com/mozilla/community-data/master/credits/names.csv',
         'type': 'bedrock.mozorg.credits.CreditsFile',
-        'name': 'credits.csv',
+        'name': 'credits/names.csv',
     },
     'forums': {
-        'url': 'https://raw.githubusercontent.com/mozilla/community-data/master/forums/raw-ng-list.txt',
         'type': 'bedrock.mozorg.forums.ForumsFile',
-        'name': 'forums.txt',
+        'name': 'forums/raw-ng-list.txt',
     },
 }
 
@@ -758,14 +725,14 @@ DONATE_PARAMS = {
     'en-US': {
         'currency': 'usd',
         'symbol': '$',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
     },
     'an': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
     },
     'as': {
         'currency': 'inr',
@@ -776,8 +743,20 @@ DONATE_PARAMS = {
     'ast': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
+    },
+    'az': {
+        'currency': 'azn',
+        'symbol': u'₼',
+        'presets': '34,17,8,5',
+        'default': '17'
+    },
+    'bn-BD': {
+        'currency': 'bdt',
+        'symbol': u'৳',
+        'presets': '1700,840,420,250',
+        'default': '840'
     },
     'bn-IN': {
         'currency': 'inr',
@@ -794,128 +773,140 @@ DONATE_PARAMS = {
     'ca': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
+    },
+    'cak': {
+        'currency': 'gtq',
+        'symbol': 'Q',
+        'presets': '145,70,35,20',
+        'default': '70'
     },
     'cs': {
         'currency': 'czk',
         'symbol': u'Kč',
-        'presets': '400,200,100,55',
-        'default': '200'
+        'presets': '450,220,110,70',
+        'default': '220'
     },
     'cy': {
         'currency': 'gbp',
         'symbol': u'£',
-        'presets': '20,10,5,3',
-        'default': '10'
+        'presets': '40,25,15,8',
+        'default': '25'
     },
     'da': {
         'currency': 'dkk',
         'symbol': 'kr',
-        'presets': '160,80,40,20',
-        'default': '80'
+        'presets': '130,60,30,20',
+        'default': '60'
     },
     'de': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
     },
     'dsb': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
     },
     'el': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
+    },
+    'en-CA': {
+        'currency': 'cad',
+        'symbol': u'$',
+        'presets': '65,30,15,4',
+        'default': '30'
     },
     'en-GB': {
         'currency': 'gbp',
         'symbol': u'£',
-        'presets': '20,10,5,3',
-        'default': '10'
+        'presets': '40,25,15,8',
+        'default': '25'
     },
     'es-AR': {
         'currency': 'ars',
         'symbol': '$',
-        'presets': '1600,800,400,200',
-        'default': '800'
+        'presets': '730,370,200,110',
+        'default': '370'
     },
     'es-CL': {
         'currency': 'clp',
         'symbol': '$',
-        'presets': '68000,34000,17000,10200',
-        'default': '34000'
+        'presets': '13000,6500,3250,2000',
+        'default': '6500'
     },
     'es-ES': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
     },
     'es-MX': {
         'currency': 'mxn',
         'symbol': '$',
-        'presets': '240,120,60,35',
-        'default': '120'
+        'presets': '400,200,100,60',
+        'default': '200'
     },
     'eo': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
     },
     'et': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
     },
     'eu': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
     },
     'fi': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
     },
     'fr': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
     },
     'fy-NL': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
     },
     'ga-IE': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
     },
     'gd': {
         'currency': 'gbp',
         'symbol': u'£',
-        'presets': '20,10,5,3',
-        'default': '10'
+        'presets': '40,25,15,8',
+        'default': '25'
     },
     'gl': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
     },
     'gu-IN': {
         'currency': 'inr',
@@ -938,50 +929,56 @@ DONATE_PARAMS = {
     'hsb': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
+    },
+    'hr': {
+        'currency': 'hrk',
+        'symbol': 'kn',
+        'presets': '128,64,32,19',
+        'default': '64'
     },
     'hu': {
         'currency': 'huf',
         'symbol': 'Ft',
-        'presets': '4000,2000,1000,600',
-        'default': '2000'
+        'presets': '5600,2800,1400,850',
+        'default': '2800'
     },
     'id': {
         'currency': 'idr',
         'symbol': 'Rp',
-        'presets': '270000,140000,70000,40000',
-        'default': '140000'
-    },
-    'in': {
-        'currency': 'inr',
-        'symbol': u'₹',
-        'presets': '1000,500,250,150',
-        'default': '500'
+        'presets': '300000,150000,75000,45000',
+        'default': '150000'
     },
     'it': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
     },
     'ja': {
         'currency': 'jpy',
         'symbol': u'¥',
-        'presets': '1600,800,400,250',
-        'default': '800'
+        'presets': '2240,1120,560,340',
+        'default': '1120'
     },
-    'ja-JP': {
-        'currency': 'jpy',
-        'symbol': u'¥',
-        'presets': '1600,800,400,250',
-        'default': '800'
+    'ka': {
+        'currency': 'gel',
+        'symbol': u'₾',
+        'presets': '50,25,12,7',
+        'default': '25'
     },
-    'ja-JP-mac': {
-        'currency': 'jpy',
-        'symbol': u'¥',
-        'presets': '1600,800,400,250',
-        'default': '800'
+    'kab': {
+        'currency': 'dzd',
+        'symbol': u'د.ج.‏',
+        'presets': '2400,1200,600,350',
+        'default': '1200'
+    },
+    'ko': {
+        'currency': 'krw',
+        'symbol': u'₩',
+        'presets': '22320,11160,5580,3350',
+        'default': '11160'
     },
     'kn': {
         'currency': 'inr',
@@ -992,20 +989,20 @@ DONATE_PARAMS = {
     'lij': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
     },
     'lt': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
     },
     'lv': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
     },
     'ml': {
         'currency': 'inr',
@@ -1018,6 +1015,12 @@ DONATE_PARAMS = {
         'symbol': u'₹',
         'presets': '1000,500,250,150',
         'default': '500'
+    },
+    'ms': {
+        'currency': 'myr',
+        'symbol': 'RM',
+        'presets': '85,42,21,13',
+        'default': '42'
     },
     'nb-NO': {
         'currency': 'nok',
@@ -1034,8 +1037,8 @@ DONATE_PARAMS = {
     'nl': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
     },
     'or': {
         'currency': 'inr',
@@ -1058,20 +1061,26 @@ DONATE_PARAMS = {
     'pt-BR': {
         'currency': 'brl',
         'symbol': 'R$',
-        'presets': '375,187,90,55',
-        'default': '187'
+        'presets': '80,40,20,10',
+        'default': '40'
     },
     'pt-PT': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
+    },
+    'ro': {
+        'currency': 'ron',
+        'symbol': 'lei',
+        'presets': '80,40,20,12',
+        'default': '40'
     },
     'ru': {
         'currency': 'rub',
         'symbol': u'₽',
-        'presets': '1000,500,250,140',
-        'default': '500'
+        'presets': '1300,800,500,200',
+        'default': '800'
     },
     'sat': {
         'currency': 'inr',
@@ -1082,26 +1091,32 @@ DONATE_PARAMS = {
     'sk': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
     },
     'sl': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
     },
-    'sv-SE': {
-        'currency': 'sek',
-        'symbol': 'kr',
-        'presets': '160,80,40,20',
-        'default': '80'
+    'sq': {
+        'currency': 'all',
+        'symbol': 'L',
+        'presets': '2280,1140,570,350',
+        'default': '1140'
     },
     'sr': {
         'currency': 'eur',
         'symbol': u'€',
-        'presets': '100,50,25,15',
-        'default': '50'
+        'presets': '50,30,20,10',
+        'default': '30'
+    },
+    'sv-SE': {
+        'currency': 'sek',
+        'symbol': 'kr',
+        'presets': '180,90,45,30',
+        'default': '90'
     },
     'ta': {
         'currency': 'inr',
@@ -1121,17 +1136,29 @@ DONATE_PARAMS = {
         'presets': '500,250,125,75',
         'default': '250'
     },
+    'tr': {
+        'currency': 'try',
+        'symbol': u'₺',
+        'presets': '70,35,18,10',
+        'default': '35'
+    },
+    'uk': {
+        'currency': 'uah',
+        'symbol': u'₴',
+        'presets': '530,260,130,80',
+        'default': '260'
+    },
     'zh-CN': {
         'currency': 'cny',
         'symbol': u'¥',
-        'presets': '700,350,175,100',
-        'default': '350'
+        'presets': '140,70,35,20',
+        'default': '70'
     },
     'zh-TW': {
         'currency': 'twd',
         'symbol': 'NT$',
-        'presets': '3200,1600,800,475',
-        'default': '1600'
+        'presets': '480,240,150,70',
+        'default': '240'
     },
 }
 
@@ -1144,18 +1171,6 @@ FIREFOX_TWITTER_ACCOUNTS = {
     'pt-BR': 'https://twitter.com/firefoxbrasil',
 }
 
-# Mapbox token for spaces and communities pages
-MAPBOX_TOKEN = config('MAPBOX_TOKEN', default='mozilla-webprod.ijaeac5j')
-MAPBOX_ACCESS_TOKEN = config(
-    'MAPBOX_ACCESS_TOKEN',
-    default='pk.eyJ1IjoibW96aWxsYS13ZWJwcm9kIiwiYSI6Ii0xYVEtTW8ifQ.3ikA2IgKATeXStfC5wKDaQ')
-
-# Tabzilla Information Bar default options
-TABZILLA_INFOBAR_OPTIONS = 'update translation'
-
-# Optimize.ly project code
-OPTIMIZELY_PROJECT_ID = config('OPTIMIZELY_PROJECT_ID', default='')
-
 # Fx Accounts iframe source
 FXA_IFRAME_SRC = config('FXA_IFRAME_SRC',
                         default='https://accounts.firefox.com/')
@@ -1163,6 +1178,33 @@ FXA_IFRAME_SRC = config('FXA_IFRAME_SRC',
 # Bug 1264843: embed FxA server in China within Fx China repack
 FXA_IFRAME_SRC_MOZILLAONLINE = config('FXA_IFRAME_SRC_MOZILLAONLINE',
                                       default='https://accounts.firefox.com.cn/')
+
+# Fx Accounts iframe-less form & JS endpoint
+# ***This URL *MUST* end in a traling slash!***
+
+# other acceptable values below are:
+#   - https://accounts.stage.mozaws.net/ (stage)
+#   - https://stable.dev.lcip.org/ (demo/local)
+FXA_ENDPOINT = config('FXA_ENDPOINT',
+                       default='https://accounts.firefox.com/')
+
+FXA_ENDPOINT_MOZILLAONLINE = config('FXA_ENDPOINT_MOZILLAONLINE',
+                                    default='https://accounts.firefox.com.cn/')
+
+# Fx Accounts OAuth relier flow URLs
+FXA_OAUTH_ENDPOINT = FXA_ENDPOINT + 'oauth'
+
+# other acceptable values below are:
+#   - https://oauth-stable.dev.lcip.org/v1 (demo/local)
+#   - https://oauth.stage.mozaws.net/v1 (staging)
+FXA_OAUTH_API_ENDPOINT = config('FXA_OAUTH_API_ENDPOINT',
+                                default='https://oauth-accounts.firefox.com/v1')
+
+# configure the PyFxA library
+FXA_OAUTH_CLIENT_ID = config('FXA_OAUTH_CLIENT_ID', default='')
+FXA_OAUTH_CLIENT_SECRET = config('FXA_OAUTH_CLIENT_SECRET', default='')
+# other acceptable values below are 'stable' (for demo/local) and 'stage'
+FXA_OAUTH_SERVER_ENV = config('FXA_OAUTH_SERVER_ENV', default='production')
 
 # Google Play and Apple App Store settings
 from .appstores import (GOOGLE_PLAY_FIREFOX_LINK,  # noqa
@@ -1177,11 +1219,76 @@ SEND_TO_DEVICE_LOCALES = ['de', 'en-GB', 'en-US', 'en-ZA',
 
 # country code for /country-code.json to return in dev mode
 DEV_GEO_COUNTRY_CODE = config('DEV_GEO_COUNTRY_CODE', default='US')
-SEND_TO_DEVICE_COUNTRIES = config('SEND_TO_DEVICE_COUNTRIES', default='US', cast=Csv())
+SEND_TO_DEVICE_MESSAGE_SETS = {
+    'default': {
+        'sms_countries': config('STD_SMS_COUNTRIES_DEFAULT', default='US', parser=ListOf(str)),
+        'sms': {
+            'ios': 'ff-ios-download',
+            'android': 'SMS_Android',
+        },
+        'email': {
+            'android': 'download-firefox-android',
+            'ios': 'download-firefox-ios',
+            'all': 'download-firefox-mobile',
+        }
+    },
+    'fx-android': {
+        'sms_countries': config('STD_SMS_COUNTRIES_ANDROID', default='US', parser=ListOf(str)),
+        'sms': {
+            'ios': 'ff-ios-download',
+            'android': 'android-download-embed',
+        },
+        'email': {
+            'android': 'get-android-embed',
+            'ios': 'download-firefox-ios',
+            'all': 'download-firefox-mobile',
+        }
+    },
+    'fx-mobile-download-desktop': {
+        'sms_countries': config('STD_SMS_COUNTRIES_DESKTOP', default='US', parser=ListOf(str)),
+        'sms': {
+            'all': 'mobile-heartbeat',
+        },
+        'email': {
+            'all': 'download-firefox-mobile-reco',
+        }
+    },
+    'fx-50-whatsnew': {
+        'sms_countries': config('STD_SMS_COUNTRIES_WHATSNEW50', default='US', parser=ListOf(str)),
+        'sms': {
+            'all': 'whatsnewfifty',
+        },
+        'email': {
+            'all': 'download-firefox-mobile-whatsnew',
+        }
+    },
+    'fx-focus': {
+        'sms_countries': config('STD_SMS_COUNTRIES_WHATSNEW61', default='US', parser=ListOf(str)),
+        'sms': {
+            'all': 'focus_sms_whatsnew',
+        },
+        'email': {
+            'all': 'download-focus-mobile-whatsnew',
+        }
+    },
+    'fx-klar': {
+        'sms_countries': config('STD_SMS_COUNTRIES_WHATSNEW61', default='US', parser=ListOf(str)),
+        'sms': {
+            'all': 'focus_sms_whatsnew',
+        },
+        'email': {
+            'all': 'download-klar-mobile-whatsnew',
+        }
+    }
+}
 
 RELEASE_NOTES_PATH = config('RELEASE_NOTES_PATH', default=path('release_notes'))
 RELEASE_NOTES_REPO = config('RELEASE_NOTES_REPO', default='https://github.com/mozilla/release-notes.git')
 RELEASE_NOTES_BRANCH = config('RELEASE_NOTES_BRANCH', default='master')
+
+WWW_CONFIG_PATH = config('WWW_CONFIG_PATH', default=path('www_config'))
+WWW_CONFIG_REPO = config('WWW_CONFIG_REPO', default='https://github.com/mozmeao/www-config.git')
+WWW_CONFIG_BRANCH = config('WWW_CONFIG_BRANCH', default='master')
 
 MOFO_SECURITY_ADVISORIES_PATH = config('MOFO_SECURITY_ADVISORIES_PATH',
                                        default=path('mofo_security_advisories'))
@@ -1223,68 +1330,65 @@ LOGGING = {
 
 PASSWORD_HASHERS = ['django.contrib.auth.hashers.PBKDF2PasswordHasher']
 
-TABLEAU_DB_URL = config('TABLEAU_DB_URL', default=None)
+TABLEAU_DB_URL = config('TABLEAU_DB_URL', default='')
 
-ADMINS = MANAGERS = config('ADMINS', cast=json.loads,
+ADMINS = MANAGERS = config('ADMINS', parser=json.loads,
                            default='[]')
 
 GTM_CONTAINER_ID = config('GTM_CONTAINER_ID', default='')
 GMAP_API_KEY = config('GMAP_API_KEY', default='')
 STUB_ATTRIBUTION_HMAC_KEY = config('STUB_ATTRIBUTION_HMAC_KEY', default='')
-STUB_ATTRIBUTION_RATE = config('STUB_ATTRIBUTION_RATE', default=1 if DEV else 0, cast=float)
+STUB_ATTRIBUTION_RATE = config('STUB_ATTRIBUTION_RATE', default=str(1 if DEV else 0), parser=float)
+STUB_ATTRIBUTION_MAX_LEN = config('STUB_ATTRIBUTION_MAX_LEN', default='200', parser=int)
 
 STATSD_CLIENT = config('STATSD_CLIENT', default='django_statsd.clients.normal')
 STATSD_HOST = config('STATSD_HOST', default='127.0.0.1')
-STATSD_PORT = config('STATSD_PORT', cast=int, default=8125)
+STATSD_PORT = config('STATSD_PORT', parser=int, default='8125')
 STATSD_PREFIX = config('STATSD_PREFIX', default='bedrock')
 
 FIREFOX_MOBILE_SYSREQ_URL = 'https://support.mozilla.org/kb/will-firefox-work-my-mobile-device'
 
 MOZILLA_LOCATION_SERVICES_KEY = 'a9b98c12-d9d5-4015-a2db-63536c26dc14'
 
-DEAD_MANS_SNITCH_URL = config('DEAD_MANS_SNITCH_URL', default=None)
+DEAD_MANS_SNITCH_URL = config('DEAD_MANS_SNITCH_URL', default='')
 
 RAVEN_CONFIG = {
-    'dsn': config('SENTRY_DSN', None),
-    'release': config('GIT_SHA', None),
+    'dsn': config('SENTRY_DSN', default=''),
+    'site': '.'.join(x for x in [APP_NAME, CLUSTER_NAME] if x),
+    'release': config('GIT_SHA', default=''),
 }
 
 # Django-CSP
-CSP_DEFAULT_SRC = (
-    "'self'",
-    '*.mozilla.net',
-    '*.mozilla.org',
-    '*.mozilla.com',
+CSP_DEFAULT_SRC = config('CSP_DEFAULT_SRC', parser=ListOf(str),
+                         default="'self',*.mozilla.net,*.mozilla.org,*.mozilla.com"
 )
-CSP_IMG_SRC = CSP_DEFAULT_SRC + (
+CSP_IMG_SRC = CSP_DEFAULT_SRC + [
     'data:',
-    '*.optimizely.com',
+    'mozilla.org',
     'www.googletagmanager.com',
     'www.google-analytics.com',
-    '*.tiles.mapbox.com',
-    'api.mapbox.com',
+    'adservice.google.com',
+    'adservice.google.de',
+    'adservice.google.dk',
     'creativecommons.org',
-)
-CSP_SCRIPT_SRC = CSP_DEFAULT_SRC + (
+]
+CSP_SCRIPT_SRC = CSP_DEFAULT_SRC + [
     # TODO fix things so that we don't need this
     "'unsafe-inline'",
     # TODO snap.svg.js passes a string to Function() which is
     # blocked without unsafe-eval. Find a way to remove that.
     "'unsafe-eval'",
-    '*.optimizely.com',
-    'optimizely.s3.amazonaws.com',
     'www.googletagmanager.com',
     'www.google-analytics.com',
     'tagmanager.google.com',
     'www.youtube.com',
     's.ytimg.com',
-)
-CSP_STYLE_SRC = CSP_DEFAULT_SRC + (
+]
+CSP_STYLE_SRC = CSP_DEFAULT_SRC + [
     # TODO fix things so that we don't need this
     "'unsafe-inline'",
-)
-CSP_CHILD_SRC = (
-    '*.optimizely.com',
+]
+CSP_CHILD_SRC = [
     'www.googletagmanager.com',
     'www.google-analytics.com',
     'www.youtube-nocookie.com',
@@ -1293,42 +1397,36 @@ CSP_CHILD_SRC = (
     'accounts.firefox.com',
     'accounts.firefox.com.cn',
     'www.youtube.com',
-)
-CSP_CONNECT_SRC = CSP_DEFAULT_SRC + (
-    '*.optimizely.com',
+]
+CSP_CONNECT_SRC = CSP_DEFAULT_SRC + [
     'www.googletagmanager.com',
     'www.google-analytics.com',
-    '*.tiles.mapbox.com',
-    'api.mapbox.com',
-)
-CSP_REPORT_ONLY = config('CSP_REPORT_ONLY', default=False, cast=bool)
-CSP_REPORT_ENABLE = config('CSP_REPORT_ENABLE', default=False, cast=bool)
+    FXA_ENDPOINT,
+    FXA_ENDPOINT_MOZILLAONLINE,
+]
+CSP_REPORT_ONLY = config('CSP_REPORT_ONLY', default='false', parser=bool)
+CSP_REPORT_ENABLE = config('CSP_REPORT_ENABLE', default='false', parser=bool)
 if CSP_REPORT_ENABLE:
     CSP_REPORT_URI = config('CSP_REPORT_URI', default='/csp-violation-capture')
 
-CSP_EXTRA_FRAME_SRC = config('CSP_EXTRA_FRAME_SRC', default='', cast=Csv())
+CSP_EXTRA_FRAME_SRC = config('CSP_EXTRA_FRAME_SRC', default='', parser=ListOf(str))
 if CSP_EXTRA_FRAME_SRC:
     CSP_CHILD_SRC += tuple(CSP_EXTRA_FRAME_SRC)
 
 # support older browsers (mainly Safari)
 CSP_FRAME_SRC = CSP_CHILD_SRC
 
-# Bug 1331069, 1343033 - Double Click & Yahoo tracking pixels for download page.
+# Bug 1331069 - Double Click tracking pixel for download page.
 AVAILABLE_TRACKING_PIXELS = {
     'doubleclick': ('https://ad.doubleclick.net/ddm/activity/src=6417015;type=deskt0;cat=mozil0;dc_lat=;dc_rdid=;'
                     'tag_for_child_directed_treatment=;ord=1;num=1?&_dc_ck=try'),
-    'yahoo_purple': 'https://sp.analytics.yahoo.com/spp.pl?a=10000&.yp=10022313',
-    'yahoo_green': 'https://sp.analytics.yahoo.com/spp.pl?a=10000&.yp=10022314',
 }
-ENABLED_PIXELS = config('ENABLED_PIXELS', default='doubleclick,yahoo_purple,yahoo_green', cast=Csv())
+ENABLED_PIXELS = config('ENABLED_PIXELS', default='doubleclick', parser=ListOf(str))
 TRACKING_PIXELS = [AVAILABLE_TRACKING_PIXELS[x] for x in ENABLED_PIXELS if x in AVAILABLE_TRACKING_PIXELS]
 
-if config('SWITCH_TRACKING_PIXEL', default=DEV, cast=bool):
+if config('SWITCH_TRACKING_PIXEL', default=str(DEV), parser=bool):
     if 'doubleclick' in ENABLED_PIXELS:
         CSP_IMG_SRC += ('ad.doubleclick.net',)
-
-    if any([x.startswith('yahoo') for x in ENABLED_PIXELS]):
-        CSP_IMG_SRC += ('sp.analytics.yahoo.com',)
 
 # Bug 1345467: Funnelcakes are now explicitly configured in the environment.
 # Set experiment specific variables like the following:

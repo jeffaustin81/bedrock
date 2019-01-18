@@ -17,13 +17,20 @@
 {% endblock %}
 
 {% block page_title_prefix %}{% endblock %}
-{% block page_title %}{{ _('{product} — {channel} Notes ({version})')|f(product=release.product, channel=channel_name, version=release.version) }}{% endblock %}
+{% block page_title %}{{ _('{product} {channel} {version}, See All New Features, Updates and Fixes')|f(product=release.product, channel=channel_name, version=release.version) }}{% endblock %}
+{% block page_title_suffix %}{% endblock %}
 
 {% block body_id %}notes{% endblock %}
 {% block body_class %}fx-notes{% endblock %}
 
 {% block page_css %}
-  {% stylesheet 'firefox_releasenotes_firefox' %}
+  {{ css_bundle('firefox_releasenotes_firefox') }}
+{% endblock %}
+
+{% block global_nav %}
+  {% if LANG.startswith('en-') %}
+    {% include 'includes/protocol/navigation/index.html' %}
+  {% endif %}
 {% endblock %}
 
 {# channel_name is for display purposes where needed.  #}
@@ -32,18 +39,55 @@
 {% block site_header %}
 <header id="masthead" class="relasenotes-header">
   <div class="container">
-    <div id="tabzilla">
-      <a href="{{ url('mozorg.home') }}">{{ _('Mozilla') }}</a>
-    </div>
     {% block site_header_nav %}
-      {% include 'firefox/includes/release-menu.html' %}
+      {% if not LANG.startswith('en-') %}
+        {% include 'firefox/includes/release-menu.html' %}
+      {% endif %}
     {% endblock %}
     {% block site_header_logo %}
-      <h2><a href="{{ url('firefox') }}">{{ high_res_img('firefox/template/header-logo.png', {'alt': 'Mozilla Firefox', 'width': '185', 'height': '70'}) }}</a></h2>
+      <h2>
+        <a href="{{ url('firefox') }}">
+          {% if release.major_version_int >= 57 %}
+            {{ high_res_img('logos/firefox/logo-quantum-wordmark-large.png', {'alt': 'Firefox', 'width': '185', 'height': '69'}) }}
+          {% elif release.product == 'Firefox for iOS' and release.major_version_int >= 10 %}
+            {{ high_res_img('logos/firefox/logo-quantum-wordmark-large.png', {'alt': 'Firefox', 'width': '185', 'height': '69'}) }}
+          {% else %}
+            {{ high_res_img('firefox/template/header-logo.png', {'alt': 'Mozilla Firefox', 'width': '185', 'height': '70'}) }}
+          {% endif %}
+        </a>
+      </h2>
     {% endblock %}
   </div>
 </header>
 {% endblock %}
+
+{% set download_button %}
+  <div class="download-buttons">
+    {% if release.product == 'Firefox for iOS' %}
+      <a rel="external" href="{{ firefox_ios_url('mozorg-releasenotes_page-appstore-button') }}" data-link-type="download" data-download-os="iOS">
+        <img src="{{ l10n_img('firefox/ios/btn-app-store.svg') }}" alt="{{ _('Download on the App Store') }}">
+      </a>
+    {% elif release.product == 'Firefox for Android' %}
+      {% if release.channel in ['Nightly', 'Aurora'] %}
+        {{ download_firefox('nightly', platform='android', alt_copy=_('Download')) }}
+      {% elif release.channel == 'Beta' %}
+        {{ download_firefox('beta', platform='android', alt_copy=_('Download')) }}
+      {% else %}
+        {{ google_play_button() }}
+      {% endif %}
+    {% elif release.product == 'Firefox' %}
+      {% if release.channel == 'Nightly' %}
+        {{ download_firefox('nightly', platform='desktop', force_direct=True, alt_copy=_('Download Firefox Nightly')) }}
+      {% elif release.channel == 'Aurora' %}
+        {{ download_firefox('alpha', platform='desktop', force_direct=True, alt_copy=_('Download Firefox Developer Edition')) }}
+      {% elif release.channel == 'Beta' %}
+        {{ download_firefox('beta', platform='desktop', force_direct=True, alt_copy=_('Download Firefox Beta')) }}
+      {% else %}
+        {{ download_firefox() }}
+      {% endif %}
+    {% endif %}
+  </div>
+{% endset %}
 
 {% block content %}
 <main role="main" class="release-notes">
@@ -53,9 +97,9 @@
     <header class="notes-head">
       <div class="intro">
         <div class="container">
-        {% block notes_heading_primary %}
-          <h1>{{ _('See what’s new in Firefox!') }}</h1>
-        {% endblock %}
+          {% block notes_heading_primary %}
+            <h1>{{ _('See what’s new in Firefox!') }}</h1>
+          {% endblock %}
           <p>
             {% trans
             feedback='https://input.mozilla.org/feedback/android/' + release.version + '?utm_source=releasenotes'
@@ -68,6 +112,16 @@
           </p>
         </div>
       </div>
+
+    {% block top_download_buttons %}
+      <div class="top-download-buttons">
+        <div class="container">
+          <div class="header-download">
+            {{ download_button }}
+          </div>
+        </div>
+      </div>
+    {% endblock %}
 
     {% block platform_switch %}
       <nav id="nav" class="navigator">
@@ -86,6 +140,11 @@
             <li><a href="{{ equivalent_release_url }}">{{ _('Android') }}</a></li>
           {% else %}
             <li><a href="{{ url('firefox.notes', platform='android') }}">{{ _('Android') }}</a></li>
+          {% endif %}
+          {% if release.product == 'Firefox for iOS' and release.channel == 'Release' %}
+            <li class="current">{{ _('iOS') }}</li>
+          {% else %}
+            <li><a href="{{ url('firefox.notes', platform='ios') }}">{{ _('iOS') }}</a></li>
           {% endif %}
             <li class="{% if release.channel != 'Release' %}current {% endif %}submenu-title">
               <a href="#" role="button" aria-controls="nav-submenu" aria-expanded="false">{{ _('Other Releases') }}</a>
@@ -117,11 +176,18 @@
           <div class="version">
             <h2>{{ _('{version}')|f(version=release.version) }}</h2>
             <h3>{{ release.product }} {{ release.channel }}</h3>
-            <p>{{ _('{date}')|f(date=release.release_date|l10n_format_date) }}</p>
+            {% if release.is_public %}
+              <p>{{ _('{date}')|f(date=release.release_date|l10n_format_date) }}</p>
+            {% endif %}
           </div>
           <div class="description">
+            {% if release.is_public %}
               <h2>{{ _('Version {version}, first offered to {channel} channel users on {date}')|f(channel=release.channel, date=release.release_date|l10n_format_date, version=release.version) }}</h2>
               <p>{{ release.text|safe }}</p>
+            {% else %}
+              <h2>{{ _('We’re still preparing the notes for this release, and will post them here when they are ready. Please check back later.') }}</h2>
+              {% block extra_draft_description %}{% endblock %}
+            {% endif %}
           </div>
           {% endblock %}
         </div>
@@ -133,7 +199,7 @@
     <section class="notes-section">
       <div class="features" id="new-features">
         <div class="container">
-        {% if release.notes %}
+        {% if release.is_public and release.notes %}
           {% for note in release.notes if note.tag == "New" %}
             {% if loop.first %}
             <div class="section-wrapper" id="{{ note.tag|lower() }}">
@@ -173,7 +239,7 @@
             {% endif %}
           {% endfor %}
 
-          {% for note in release.notes if note.tag == "Developer" %}
+          {% for note in release.notes if note.tag == "Enterprise" %}
             {% if loop.first %}
             <div class="section-wrapper" id="{{ note.tag|lower() }}">
               <h4>{{ note.tag }}</h4>
@@ -182,15 +248,29 @@
               {{ note_entry(note) }}
               {% if loop.last %}
               </ul>
-              <a class="mdn-icon more" rel="external" href="https://developer.mozilla.org/docs/Mozilla/Firefox/Releases/{{ release.major_version }}">{{ _('Developer Information') }}</a>
             </div>
             {% endif %}
           {% endfor %}
 
+          {# The Developer section is always visible with a MDN link #}
+          <div class="section-wrapper" id="developer">
+            <h4>{{ _('Developer') }}</h4>
+            {% for note in release.notes if note.tag == "Developer" %}
+              {% if loop.first %}
+              <ul class="section-items">
+              {% endif %}
+              {{ note_entry(note) }}
+              {% if loop.last %}
+              </ul>
+              {% endif %}
+            {% endfor %}
+            <a class="mdn-icon more" rel="external" href="https://developer.mozilla.org/docs/Mozilla/Firefox/Releases/{{ release.major_version }}">{{ _('Developer Information') }}</a>
+          </div>
+
           {% for note in release.notes if note.tag == "HTML5" %}
             {% if loop.first %}
-            <div class="section-wrapper" id="{{ note.tag|lower() }}">
-              <h4>{{ note.tag }}</h4>
+            <div class="section-wrapper" id="web-platform">
+              <h4>{{ _('Web Platform') }}</h4>
               <ul class="section-items">
               {% endif %}
               {{ note_entry(note) }}
@@ -264,31 +344,9 @@
             {% endif %}
           {% endif %}
         </div>
-        <div class="download-buttons">
-          {% if release.product == 'Firefox for iOS' %}
-            <a rel="external" href="{{ firefox_ios_url('mozorg-releasenotes_page-appstore-button') }}" data-link-type="download" data-download-os="iOS">
-              <img src="{{ l10n_img('firefox/ios/btn-app-store.svg') }}" alt="{{ _('Download on the App Store') }}">
-            </a>
-          {% elif release.product == 'Firefox for Android' %}
-            {% if release.channel in ['Nightly', 'Aurora'] %}
-              {{ download_firefox('nightly', platform='android', alt_copy=_('Download')) }}
-            {% elif release.channel == 'Beta' %}
-              {{ download_firefox('beta', platform='android', alt_copy=_('Download')) }}
-            {% else %}
-              {{ google_play_button() }}
-            {% endif %}
-          {% elif release.product == 'Firefox' %}
-            {% if release.channel == 'Nightly' %}
-              {{ download_firefox('nightly', platform='desktop', force_direct=True, alt_copy=_('Download Firefox Nightly')) }}
-            {% elif release.channel == 'Aurora' %}
-              {{ download_firefox('alpha', platform='desktop', force_direct=True, alt_copy=_('Download Firefox Developer Edition')) }}
-            {% elif release.channel == 'Beta' %}
-              {{ download_firefox('beta', platform='desktop', force_direct=True, alt_copy=_('Download Firefox Beta')) }}
-            {% else %}
-              {{ download_firefox() }}
-            {% endif %}
-          {% endif %}
-        </div>
+
+        {{ download_button }}
+
       </div>
     </section>
     {% endblock %}
@@ -328,7 +386,7 @@
 {% block email_form %}{% endblock %}
 
 {% block js %}
-  {% javascript 'releasenotes' %}
+  {{ js_bundle('releasenotes') }}
 {% endblock %}
 
 {% macro note_entry(note) %}

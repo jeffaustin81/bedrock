@@ -4,7 +4,7 @@
 {% block body_id %}projects{% endblock %}
 
 {% block page_css %}
-  {% stylesheet 'projects_mozilla_based' %}
+  {{ css_bundle('projects_mozilla_based') }}
 {% endblock %}
 
 {% block breadcrumbs %}
@@ -28,7 +28,7 @@
   <p>{{ _('The all-in-one application formerly known as the “Mozilla Application Suite”, containing a web browser, a mail and newsgroups client, an HTML editor, web development tools, and an IRC chat client.') }}</p>
   </li>
   <li>
-  <h3><a href="/projects/calendar/"><img src="{{ static('img/projects/calendar/calendar-logo.png') }}" width="64" height="64" alt="" /><span>{{ _('Lightning') }}</span></a></h3>
+  <h3><a href="https://www.thunderbird.net/calendar/"><img src="{{ static('img/projects/mozilla-based/calendar-logo.png') }}" width="64" height="64" alt="" /><span>{{ _('Lightning') }}</span></a></h3>
   <p>{{ _('Lightning is a popular calendaring, scheduling and task management extension. Sunbird® is a cross-platform application that brings Mozilla-style ease-of-use to your calendar.') }}</p>
   </li>
   <li>
@@ -352,12 +352,6 @@
   <li><a href="http://www.mozdev.org/community/books.html">{{ _('Mozilla and Firefox books') }}</a></li>
   <li><a href="https://wiki.mozilla.org/Consulting">{{ _('Mozilla consultants') }}</a></li>
   </ul>
-
-  <div class="powered-by">
-    <a href="{{ url('mozorg.powered-by') }}">
-      <img width="200" height="55" alt="{{ _('Powered by Mozilla') }}" src="{{ static('img/projects/mozilla-based/poweredby_200.gif') }}">
-    </a>
-  </div>
 </aside>
 
 </div>

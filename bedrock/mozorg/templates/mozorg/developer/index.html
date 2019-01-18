@@ -2,8 +2,6 @@
  # License, v. 2.0. If a copy of the MPL was not distributed with this
  # file, You can obtain one at http://mozilla.org/MPL/2.0/. -#}
 
-{% from "macros.html" import lazy_image with context %}
-
 {% extends "base-pebbles.html" %}
 
 {% block page_title %}{{ _('Developer Tools &amp; Resources') }}{% endblock %}
@@ -18,12 +16,12 @@
 {% block body_attrs %}{{ super() }} data-global-nav-current-link="technology"{% endblock %}
 
 {% block page_css %}
-  {% stylesheet 'developer-hub' %}
+  {{ css_bundle('developer-hub') }}
 {% endblock %}
 
 {% block site_header %}
   {% if LANG.startswith('en-') %}
-    {% include 'includes/global-nav.html' %}
+    {% include 'includes/protocol/navigation/index.html' %}
   {% else %}
     {% set logo_src = static('img/pebbles/moz-wordmark-dark-reverse.svg') %}
     {% include 'mozorg/home/includes/nav.html' %}
@@ -31,10 +29,12 @@
 {% endblock %}
 
 {% block content %}
-{% include 'mozorg/developer/includes/sub-nav.html' %}
+{% with current='developer' %}
+  {% include 'mozorg/developer/includes/sub-nav.html' %}
+{% endwith %}
 {% include 'mozorg/developer/includes/icon-sprite.svg' %}
 
-{% set lazy_image_placeholder = 'img/mozorg/developer/hub/placeholder.png' %}
+{% set lazy_image_placeholder = 'mozorg/developer/hub/placeholder.png' %}
 
 <main role="main">
   <header class="header-intro">
@@ -52,18 +52,18 @@
       <div class="developer-tools card card-image-large">
         <div class="card-content-wrapper">
           <div class="card-content">
-            <a href="{{ url('firefox.developer') }}" data-link-name="Firefox DevTools" data-link-type="link" data-link-position="Firefox DevTools">
-              <h3 class="card-title">{{ _('Firefox DevTools') }}</h3>
+            <a href="{{ url('firefox.developer.index') }}" data-link-name="Firefox Quantum: Developer Edition" data-link-type="link" data-link-position="Main Hero">
+              <h3 class="card-title">{{ _('Firefox Quantum: Developer Edition') }}</h3>
             </a>
 
             <p>
             {% trans %}
-              Modern tools for Web development.
+              Get the latest features, fast performance, and the development tools you need to build for the open web.
             {% endtrans %}
             </p>
 
-            <a href="{{ url('firefox.developer') }}" class="cta-link" data-link-name="Explore DevTools" data-link-type="link" data-link-position="Firefox DevTools">
-              {{ _('Explore DevTools') }}
+            <a href="{{ url('firefox.developer.index') }}" class="cta-link" data-link-name="Download Developer Edition" data-link-type="link" data-link-position="Main Hero">
+              {{ _('Download Developer Edition') }}
             </a>
           </div>
         </div> {#--/.card-content-wrapper--#}
@@ -94,8 +94,8 @@
         </div>
 
         <div class="card">
-          <a class="card-image" href="{{ url('firefox.developer') }}" data-link-type="link" data-link-position="Developer resources" data-link-name="Firefox DevTools">
-            {{ lazy_image('img/mozorg/developer/hub/resource-devtools.jpg', lazy_image_placeholder) }}
+          <a class="card-image" href="https://developer.mozilla.org/docs/Tools" data-link-type="link" data-link-position="Developer resources" data-link-name="Firefox DevTools">
+            {{ lazy_img(image_url='mozorg/developer/hub/resource-devtools.jpg', placeholder_url=lazy_image_placeholder) }}
             <h3 class="card-title">{{ _('Firefox DevTools') }}</h3>
           </a>
 
@@ -104,13 +104,13 @@
           </div>
 
           <p class="card-cta">
-            <a href="{{ url('firefox.developer') }}" class="cta-link" data-link-type="link" data-link-position="Developer resources" data-link-name="Learn more">{{ _('Learn more') }}</a>
+            <a href="https://developer.mozilla.org/docs/Tools" class="cta-link" data-link-type="link" data-link-position="Developer resources" data-link-name="Explore DevTools">{{ _('Explore DevTools') }}</a>
           </p>
         </div>
 
         <div class="card">
           <a class="card-image" href="https://research.mozilla.org/webassembly/?utm_source=www.mozilla.org&amp;utm_medium=referral&amp;utm_campaign=developer-hub" data-link-type="link" data-link-position="Developer resources" data-link-name="WebAssembly">
-            {{ lazy_image('img/mozorg/developer/hub/resource-webassembly.png', lazy_image_placeholder) }}
+            {{ lazy_img(image_url='mozorg/developer/hub/resource-webassembly.png', placeholder_url=lazy_image_placeholder) }}
             <h3 class="card-title">{{ _('WebAssembly') }}</h3>
           </a>
 
@@ -125,7 +125,7 @@
 
         <div class="card">
           <a class="card-image" href="https://medium.com/mozilla-tech/keep-the-web-open-with-cross-browser-testing-e3006662a042" data-link-type="link" data-link-position="Developer resources" data-link-name="Cross-browser testing">
-            {{ lazy_image('img/mozorg/developer/hub/resource-webcompat.png', lazy_image_placeholder) }}
+            {{ lazy_img(image_url='mozorg/developer/hub/resource-webcompat.png', placeholder_url=lazy_image_placeholder) }}
             <h3 class="card-title">{{ _('Cross-browser testing') }}</h3>
           </a>
 
@@ -150,7 +150,7 @@
       <ul class="news-feed">
         <li>
           <article class="entry">
-            <a class="entry-block" rel="bookmark" href="https://hacks.mozilla.org/2017/02/devroadshow/?utm_source=www.mozilla.org&amp;utm_medium=referral&amp;utm_campaign=developer-hub" data-link-name="Developer Roadshow" data-link-type="link" data-link-position="Events">
+            <a class="entry-block" rel="bookmark" href="https://github.com/mozilla/devroadshow2017" data-link-name="Developer Roadshow" data-link-type="link" data-link-position="Events">
               <img src="{{ static('img/mozorg/developer/hub/event-roadshow.jpg') }}" alt="">
               <h3 class="entry-title">{{ _('Developer Roadshow') }}</h3>
             </a>
@@ -158,7 +158,7 @@
               <p>{{ _('Mozilla-focused events for people who build the Web.') }}</p>
             </div>
             <p class="entry-cta">
-              <a href="https://hacks.mozilla.org/2017/02/devroadshow/?utm_source=www.mozilla.org&amp;utm_medium=referral&amp;utm_campaign=developer-hub" class="cta-link" data-link-name="See dates" data-link-type="link" data-link-position="Events">{{ _('See dates') }}</a>
+              <a href="https://github.com/mozilla/devroadshow2017" class="cta-link" data-link-name="See dates" data-link-type="link" data-link-position="Events">{{ _('See dates') }}</a>
             </p>
           </article>
         </li>
@@ -181,7 +181,7 @@
         <div class="card card-double">
           <div class="card-image">
             <a href="{{ url('mozorg.developer.css-grid-demo') }}" data-link-type="link" data-link-position="Projects" data-link-name="CSS Grid Layouts">
-              {{ lazy_image('img/mozorg/developer/hub/project-cssgrid.png', lazy_image_placeholder) }}
+              {{ lazy_img(image_url='mozorg/developer/hub/project-cssgrid.png', placeholder_url=lazy_image_placeholder) }}
               <h3 class="card-title">{{ _('CSS Grid Layouts') }}</h3>
             </a>
           </div>
@@ -200,7 +200,7 @@
         <div class="card">
           <div class="card-image">
             <a href="https://wiki.mozilla.org/Quantum" data-link-type="link" data-link-position="Projects" data-link-name="Project Quantum">
-              {{ lazy_image('img/mozorg/developer/hub/project-quantum.jpg', lazy_image_placeholder) }}
+              {{ lazy_img(image_url='mozorg/developer/hub/project-quantum.jpg', placeholder_url=lazy_image_placeholder) }}
               <h3 class="card-title">{{ _('Project Quantum') }}</h3>
             </a>
           </div>
@@ -219,7 +219,7 @@
         <div class="card">
           <div class="card-image">
             <a href="https://www.rust-lang.org/" data-link-type="link" data-link-position="Projects" data-link-name="Rust">
-              {{ lazy_image('img/mozorg/developer/hub/project-rust.jpg', lazy_image_placeholder) }}
+              {{ lazy_img(image_url='mozorg/developer/hub/project-rust.jpg', placeholder_url=lazy_image_placeholder) }}
               <h3 class="card-title">{{ _('Rust') }}</h3>
             </a>
           </div>
@@ -238,7 +238,7 @@
         <div class="card">
           <div class="card-image">
             <a href="https://developer.mozilla.org/docs/Games?utm_source=www.mozilla.org&amp;utm_medium=referral&amp;utm_campaign=developer-hub" data-link-type="link" data-link-position="Projects" data-link-name="Game Development">
-              {{ lazy_image('img/mozorg/developer/hub/project-gamedev.jpg', lazy_image_placeholder) }}
+              {{ lazy_img(image_url='mozorg/developer/hub/project-gamedev.jpg', placeholder_url=lazy_image_placeholder) }}
               <h3 class="card-title">{{ _('Game Development') }}</h3>
             </a>
           </div>
@@ -257,7 +257,7 @@
         <div class="card">
           <div class="card-image">
             <a href="https://aframe.io" data-link-type="link" data-link-position="Projects" data-link-name="A-Frame for WebVR">
-              {{ lazy_image('img/mozorg/developer/hub/project-aframe.png', lazy_image_placeholder) }}
+              {{ lazy_img(image_url='mozorg/developer/hub/project-aframe.png', placeholder_url=lazy_image_placeholder) }}
               <h3 class="card-title">{{ _('A-Frame for WebVR') }}</h3>
             </a>
           </div>
@@ -286,7 +286,7 @@
         <div class="card card-double">
           <a class="card-image video-play" href="https://youtu.be/16enLRDbOyY" data-link-type="link" data-link-position="Videos to watch" data-link-name="Announcing CSS Grid and the Firefox Grid Inspector tool">
             <div class="video-thumbnail">
-              {{ lazy_image('img/mozorg/developer/hub/video-gridinspector.jpg', lazy_image_placeholder) }}
+              {{ lazy_img(image_url='mozorg/developer/hub/video-gridinspector.jpg', placeholder_url=lazy_image_placeholder) }}
               <svg class="play-button"><use xlink:href="#video-play-button"></use></svg>
             </div>
             <h3 class="card-title">{{ _('Announcing CSS Grid and the Firefox Grid Inspector tool') }}</h3>
@@ -299,7 +299,7 @@
         <div class="card">
           <a class="card-image video-play" href="https://youtu.be/MaJCfdmr9Wg" data-link-type="link" data-link-position="Videos to watch" data-link-name="WebAssembly: A game changer">
             <div class="video-thumbnail">
-              {{ lazy_image('img/mozorg/developer/hub/video-webassembly.jpg', lazy_image_placeholder) }}
+              {{ lazy_img(image_url='mozorg/developer/hub/video-webassembly.jpg', placeholder_url=lazy_image_placeholder) }}
               <svg class="play-button"><use xlink:href="#video-play-button"></use></svg>
             </div>
             <h3 class="card-title">{{ _('WebAssembly: A game changer') }}</h3>
@@ -312,7 +312,7 @@
         <div class="card">
           <a class="card-image video-play" href="https://youtu.be/8EPsnf_ZYU0" data-link-type="link" data-link-position="Videos to watch" data-link-name="Rust and the future of systems programming">
             <div class="video-thumbnail">
-              {{ lazy_image('img/mozorg/developer/hub/video-rust.jpg', lazy_image_placeholder) }}
+              {{ lazy_img(image_url='mozorg/developer/hub/video-rust.jpg', placeholder_url=lazy_image_placeholder) }}
               <svg class="play-button"><use xlink:href="#video-play-button"></use></svg>
             </div>
             <h3 class="card-title">{{ _('Rust and the future of systems programming') }}</h3>
@@ -325,7 +325,7 @@
         <div class="card">
           <a class="card-image video-play" href="https://youtu.be/TT7ugKuUMv0" data-link-type="link" data-link-position="Videos to watch" data-link-name="WebGL 2 demo">
             <div class="video-thumbnail">
-              {{ lazy_image('img/mozorg/developer/hub/video-webgldemo.jpg', lazy_image_placeholder) }}
+              {{ lazy_img(image_url='mozorg/developer/hub/video-webgldemo.jpg', placeholder_url=lazy_image_placeholder) }}
               <svg class="play-button"><use xlink:href="#video-play-button"></use></svg>
             </div>
             <h3 class="card-title">{{ _('WebGL 2 demo') }}</h3>
@@ -338,7 +338,7 @@
         <div class="card">
           <a class="card-image video-play" href="https://youtu.be/QK4hKWmJVLo" data-link-type="link" data-link-position="Videos to watch" data-link-name="Firefox Developer Tools: debugger overview">
             <div class="video-thumbnail">
-              {{ lazy_image('img/mozorg/developer/hub/video-debugger.jpg', lazy_image_placeholder) }}
+              {{ lazy_img(image_url='mozorg/developer/hub/video-debugger.jpg', placeholder_url=lazy_image_placeholder) }}
               <svg class="play-button"><use xlink:href="#video-play-button"></use></svg>
             </div>
             <h3 class="card-title">{{ _('Firefox Developer Tools: debugger overview') }}</h3>
@@ -422,5 +422,5 @@
 {% block email_form %}{% endblock %}
 
 {% block js %}
-  {% javascript 'developer-hub' %}
+  {{ js_bundle('developer-hub') }}
 {% endblock %}

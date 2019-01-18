@@ -3,16 +3,16 @@
 push_public_registry: true
 smoke_tests: true
 regions:
-  - usw
-  - tokyo
-  - frankfurt
+  - oregon-b
+  - iowa-a
 apps:
   - bedrock-dev
 integration_tests:
-  usw:
+  oregon-b:
     - firefox
     - headless
-  tokyo:
-    - headless
-  frankfurt:
+    - download
+  iowa-a:
+    - download
+    - firefox
     - headless

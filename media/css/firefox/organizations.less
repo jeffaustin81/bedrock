@@ -33,24 +33,149 @@
     }
 }
 
-#download .button {
-    padding: 10px;
-}
+.pick {
+    .span-all();
+    padding: 0 (@baseLine / 2);
 
-#esr-form {
-    input[type="email"],
-    input[type="text"] {
-        max-width: 90%;
+    h1 {
+        margin: @baseLine 0 0 0;
     }
 
+    p {
+        .font-size(18px);
+        margin-bottom: @baseLine * 1.5;
+    }
+
+    .col {
+        margin-bottom: (@baseLine * 2);
+    }
+
+    a.button-light {
+        background-color: #fff;
+        border-color: #fff;
+        color: @linkBlue;
+
+        &:hover,
+        &:focus {
+            background-color: #fff;
+            border-color: @linkBlue;
+            color: @linkBlue;
+        }
+    }
 }
 
-img#release-overview {
+.container p {
+    line-height: 1.7;
+}
+
+.container h4 {
+    line-height: 1.2;
+}
+
+.container a {
+    color: @linkBlue;
+}
+
+#download {
+    text-align: center;
+}
+
+#download .button {
+    padding: 10px 25px;
+}
+
+#faq {
+    .span-all();
+    margin: (@baseLine * 2) 0;
+    padding: (@baseLine * 2) 0 0;
+    background: transparent url('/media/img/mission/thin-stripe.png') repeat-x;
+}
+
+#faq .row section {
+    margin: 0 0 (@baseLine * 2);
+}
+
+#faq figure {
+    margin: 0 0 (@baseLine * 2) 0;
+    text-align: center;
+}
+
+#faq figure a {
+    display: inline-block;
+}
+
+#faq figure img {
     height: auto;
 }
 
+#faq figure figcaption {
+    margin: (@baseLine / 2) 0 0;
+    font-style: italic;
+}
+
 @media only screen and (min-width: @breakDesktop) {
-    img#release-overview {
+    @supports (display: grid) {
+        .pick {
+
+            h1 {
+                margin: (@baseLine * 2) 0 0 0;
+            }
+
+            p {
+                .font-size(20px);
+            }
+
+            .row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                margin: 0 -(@gridGutterWidth / 2);
+            }
+
+            .col {
+                display: grid;
+                margin: 0 @gridGutterWidth (@baseLine * 2);
+
+                p:last-child {
+                    align-self: end;
+                }
+            }
+        }
+    }
+
+    .sidebar {
+        .span(4);
+        .offset(1);
+    }
+
+    #faq h2 {
+        margin: 0 (@gridGutterWidth / 2) @baseLine;
+        .font-size(40px);
+    }
+
+    #faq .row {
+        display: flex;
+        margin: 0 -(@gridGutterWidth / 2);
+    }
+
+    #faq .col {
+        margin: 0 @gridGutterWidth;
+        width: calc(~'100% - ' @gridGutterWidth);
+    }
+
+    #faq figure img {
         max-width: none;
+    }
+}
+
+@media only screen and (max-width: @breakDesktop) {
+    .main-column,
+    .sidebar {
+        .span-all();
+    }
+}
+
+@media only screen and (max-width: @breakTablet) {
+    #faq {
+        margin: 0;
     }
 }

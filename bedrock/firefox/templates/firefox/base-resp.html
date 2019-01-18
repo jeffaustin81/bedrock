@@ -9,6 +9,7 @@
 {% block body_class %}sky{% endblock %}
 
 {% block page_title_prefix %}{{_('Mozilla Firefox Web Browser')}} — {% endblock %}
+
 {% block page_image %}{{ static('img/firefox/template/page-image.png') }}{% endblock %}
 {% block page_favicon %}{{ static('img/firefox/favicon.ico') }}{% endblock %}
 {% block page_favicon_large %}{{ static('img/firefox/favicon-196.png') }}{% endblock %}
@@ -33,7 +34,7 @@
   {% endblock %}
 
   {% block site_header_logo %}
-    <h2><a href="{{ url('firefox') }}">{{ high_res_img('firefox/template/header-logo.png', {'alt': 'Mozilla Firefox', 'width': '185', 'height': '70'}) }}</a></h2>
+    <h2><a href="{{ url('firefox') }}">{{ high_res_img('logos/firefox/logo-quantum-wordmark-large.png', {'alt': 'Firefox', 'width': '185', 'height': '69'}) }}</a></h2>
   {% endblock %}
 
   {% block alt_header %}{% endblock %}

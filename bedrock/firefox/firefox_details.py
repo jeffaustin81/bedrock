@@ -1,3 +1,5 @@
+# coding=utf-8
+
 import re
 from collections import OrderedDict
 from operator import itemgetter
@@ -5,21 +7,16 @@ from urllib import urlencode
 
 from django.conf import settings
 
-from decouple import Csv, config
+from everett.manager import ListOf
 from product_details import ProductDetails
 
-from bedrock.base.waffle import switch
+from bedrock.base.waffle import config
 from lib.l10n_utils.dotlang import _lazy as _
 
 
 # TODO: port this to django-mozilla-product-details
 class _ProductDetails(ProductDetails):
     bouncer_url = settings.BOUNCER_URL
-
-    # Note download-sha1.allizom.org is the production endpoint for SHA-1.
-    # It uses this because that's the only SHA-1 certificate
-    # we have that's usable. (SHA-1 certs can no longer be issued).
-    sha1_bouncer_url = 'https://download-sha1.allizom.org/'
 
     def _matches_query(self, info, query):
         words = re.split(r',|,?\s+', query.strip().lower())
@@ -28,16 +25,21 @@ class _ProductDetails(ProductDetails):
 
 
 class FirefoxDesktop(_ProductDetails):
-    download_base_url_transition = '/firefox/new/?scene=2'
+    download_base_url_transition = '/firefox/download/thanks/'
 
     # Human-readable platform names
     platform_labels = OrderedDict([
-        ('winsha1', 'Windows (XP/Vista)'),
-        ('win', 'Windows'),
         ('win64', 'Windows 64-bit'),
+        ('win', 'Windows 32-bit'),
         ('osx', 'macOS'),
-        ('linux', 'Linux'),
         ('linux64', 'Linux 64-bit'),
+        ('linux', 'Linux 32-bit'),
+    ])
+
+    # Recommended/modern vs traditional/legacy platforms
+    platform_classification = OrderedDict([
+        ('recommended', ('win64', 'osx', 'linux64')),
+        ('traditional', ('win', 'linux')),
     ])
 
     # Human-readable channel names
@@ -64,11 +66,20 @@ class FirefoxDesktop(_ProductDetails):
     def __init__(self, **kwargs):
         super(FirefoxDesktop, self).__init__(**kwargs)
 
-    def get_bouncer_url(self, platform):
-        return self.sha1_bouncer_url if not switch('disable-sha1-downloads') and platform == 'winsha1' else self.bouncer_url
-
-    def platforms(self, channel='release'):
-        platforms = self.platform_labels.copy()
+    def platforms(self, channel='release', classified=False):
+        """
+        Get the desktop platform dictionary containing slugs and corresponding
+        labels. If the classified option is True, it will be ordered by the
+        classification where recommended platforms go first, otherwise a simple
+        copy of platform_labels will be returned.
+        """
+        if classified:
+            platforms = OrderedDict()
+            for k, v in self.platform_classification.iteritems():
+                for platform in v:
+                    platforms[platform] = self.platform_labels[platform]
+        else:
+            platforms = self.platform_labels.copy()
 
         return platforms.items()
 
@@ -129,10 +140,9 @@ class FirefoxDesktop(_ProductDetails):
         for builds in all_builds:
             if locale in builds and version in builds[locale]:
                 _builds = builds[locale][version]
-                # Append 64-bit builds and Sha-1
+                # Append 64-bit builds
                 if 'Windows' in _builds:
                     _builds['Windows 64-bit'] = _builds['Windows']
-                    _builds['Windows (XP/Vista)'] = _builds['Windows']
                 if 'Linux' in _builds:
                     _builds['Linux 64-bit'] = _builds['Linux']
                 return version, _builds
@@ -209,6 +219,7 @@ class FirefoxDesktop(_ProductDetails):
         :param platform: OS. one of self.platform_labels.keys().
         :param locale: e.g. pt-BR. one exception is ja-JP-mac.
         :param force_direct: Force the download URL to be direct.
+                always True for non-release URLs.
         :param force_full_installer: Force the installer download to not be
                 the stub installer (for aurora).
         :param force_funnelcake: Force the download version for en-US Windows to be
@@ -219,80 +230,64 @@ class FirefoxDesktop(_ProductDetails):
         """
         _version = version
         _locale = 'ja-JP-mac' if platform == 'osx' and locale == 'ja' else locale
-        _platform = 'win' if platform == 'winsha1' else platform
+        channel = 'devedition' if channel == 'alpha' else channel
+        force_direct = True if channel != 'release' else force_direct
+        stub_platforms = ['win', 'win64']
+        esr_channels = ['esr', 'esr_next']
         include_funnelcake_param = False
 
         # Bug 1345467 - Only allow specifically configured funnelcake builds
         if funnelcake_id:
-            fc_platforms = config('FUNNELCAKE_%s_PLATFORMS' % funnelcake_id, default='', cast=Csv())
-            fc_locales = config('FUNNELCAKE_%s_LOCALES' % funnelcake_id, default='', cast=Csv())
-            include_funnelcake_param = _platform in fc_platforms and _locale in fc_locales
-
-        stub_langs = settings.STUB_INSTALLER_LOCALES.get(channel, {}).get(_platform, [])
-        # Nightly and Developer Edition have a special download link format
-        # see bug 1324001, 1357379
-        if channel in ['alpha', 'nightly']:
-            prod_name = 'firefox-nightly' if channel == 'nightly' else 'firefox-devedition'
-            # Use the stub installer for approved platforms
-            if (stub_langs and (stub_langs == settings.STUB_INSTALLER_ALL or _locale.lower() in stub_langs) and
-                    not force_full_installer):
-                # Download links are different for localized versions
-                suffix = 'stub'
-            elif channel == 'nightly' and locale != 'en-US':
-                # Nightly uses a different product name for localized builds
-                suffix = 'latest-l10n-ssl'
-            else:
-                suffix = 'latest-ssl'
-
-            product = '%s-%s' % (prod_name, suffix)
-
-            return '?'.join([self.get_bouncer_url(platform),
-                             urlencode([
-                                 ('product', product),
-                                 ('os', _platform),
-                                 # Order matters, lang must be last for bouncer.
-                                 ('lang', _locale),
-                             ])])
-
-        # stub installer exceptions
-        if (stub_langs and (stub_langs == settings.STUB_INSTALLER_ALL or _locale.lower() in stub_langs) and
-                not force_full_installer):
-            suffix = 'stub'
-            if force_funnelcake:
-                suffix = 'latest'
-
-            _version = ('beta-' if channel == 'beta' else '') + suffix
-        elif not include_funnelcake_param:
-            # Force download via SSL. Stub installers are always downloaded via SSL.
-            # Funnelcakes may not be ready for SSL download
-            _version += '-SSL'
-
-        # append funnelcake id to version if we have one
-        if include_funnelcake_param:
-            _version = '{vers}-f{fc}'.format(vers=_version, fc=funnelcake_id)
+            fc_platforms = config('FUNNELCAKE_%s_PLATFORMS' % funnelcake_id, default='', parser=ListOf(str))
+            fc_locales = config('FUNNELCAKE_%s_LOCALES' % funnelcake_id, default='', parser=ListOf(str))
+            include_funnelcake_param = platform in fc_platforms and _locale in fc_locales
 
         # Check if direct download link has been requested
-        # (bypassing the transition page)
-        if force_direct:
-            # build a direct download link
-            return '?'.join([self.get_bouncer_url(platform),
-                             urlencode([
-                                 ('product', 'firefox-%s' % _version),
-                                 ('os', _platform),
-                                 # Order matters, lang must be last for bouncer.
-                                 ('lang', _locale),
-                             ])])
-        else:
+        # if not just use transition URL
+        if not force_direct:
             # build a link to the transition page
             transition_url = self.download_base_url_transition
             if funnelcake_id:
                 # include funnelcake in scene 2 URL
-                transition_url += '&f=%s' % funnelcake_id
+                transition_url += '?f=%s' % funnelcake_id
 
             if locale_in_transition:
                 transition_url = '/%s%s' % (locale, transition_url)
 
             return transition_url
+
+        # otherwise build a full download URL
+        prod_name = 'firefox' if channel == 'release' else 'firefox-%s' % channel
+        suffix = 'latest-ssl'
+        if channel in esr_channels:
+            # nothing special about ESR other than there is no stub.
+            # included in this contitional to avoid the following elif.
+            if channel == 'esr_next':
+                # no firefox-esr-next-latest-ssl alias just yet
+                # could come in future in bug 1408868
+                prod_name = 'firefox'
+                suffix = '%s-SSL' % _version
+        elif platform in stub_platforms and not force_full_installer:
+            # Use the stub installer for approved platforms
+            # append funnelcake id to version if we have one
+            if include_funnelcake_param:
+                suffix = 'stub-f%s' % funnelcake_id
+            else:
+                suffix = 'stub'
+        elif channel == 'nightly' and locale != 'en-US':
+            # Nightly uses a different product name for localized builds,
+            # and is the only one ಠ_ಠ
+            suffix = 'latest-l10n-ssl'
+
+        product = '%s-%s' % (prod_name, suffix)
+
+        return '?'.join([self.bouncer_url,
+                        urlencode([
+                            ('product', product),
+                            ('os', platform),
+                            # Order matters, lang must be last for bouncer.
+                            ('lang', _locale),
+                        ])])
 
 
 class FirefoxAndroid(_ProductDetails):
@@ -301,6 +296,10 @@ class FirefoxAndroid(_ProductDetails):
         ('arm', _('ARM devices\n(Android %s+)')),
         ('x86', _('Intel devices\n(Android %s+ x86 CPU)')),
     ])
+
+    # Recommended/modern vs traditional/legacy platforms
+    # Unused but required to match FirefoxDesktop
+    platform_classification = None
 
     # Human-readable channel names
     channel_labels = {
@@ -353,7 +352,12 @@ class FirefoxAndroid(_ProductDetails):
         'x86': archive_url_base + '-%s/fennec-%s.multi.android-i386.apk',
     }
 
-    def platforms(self, channel='release'):
+    def platforms(self, channel='release', classified=False):
+        """
+        Get the Android platform dictionary containing slugs and corresponding
+        labels. The classified option is unused but required to match the
+        FirefoxDesktop implementation.
+        """
         # Use an OrderedDict to always put the ARM build in front
         platforms = OrderedDict()
 

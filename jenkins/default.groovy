@@ -5,43 +5,40 @@ stage ('Build Images') {
         try {
             sh 'docker/bin/check_if_tag.sh'
         } catch(err) {
-            utils.ircNotification([stage: 'Git Tag Check', status: 'failure'])
+            utils.slackNotification([stage: 'Git Tag Check', status: 'failure'])
             throw err
         }
     }
-    utils.ircNotification([stage: 'Test & Deploy', status: 'starting'])
-    lock ("bedrock-docker-${env.GIT_COMMIT}") {
-        image_mode = config.demo ? 'demo' : 'prod'
-        command = "docker/bin/build_images.sh --${image_mode}"
-        if (config.smoke_tests || config.integration_tests) {
-            command += ' --test'
-        }
+    utils.slackNotification([stage: 'Test & Deploy', status: 'starting'])
+    lock ("bedrock-docker-build") {
         try {
-            sh command
+            sh "make clean build-ci"
         } catch(err) {
-            utils.ircNotification([stage: 'Docker Build', status: 'failure'])
+            utils.slackNotification([stage: 'Docker Build', status: 'failure'])
             throw err
         }
+        // save the files for later
+        stash 'workspace'
     }
 }
 
 if ( config.smoke_tests ) {
     milestone()
     stage ('Test Images') {
-        parallel([
-            smoke_tests: utils.integrationTestJob('smoke'),
-            unit_tests: {
-                node {
-                    unstash 'scripts'
-                    try {
-                        sh 'docker/bin/run_tests.sh'
-                    } catch(err) {
-                        utils.ircNotification([stage: 'Unit Test', status: 'failure'])
-                        throw err
+        try {
+            parallel([
+                smoke_tests: utils.integrationTestJob('smoke'),
+                unit_tests: {
+                    node {
+                        unstash 'workspace'
+                        sh 'make test-ci'
                     }
-                }
-            },
-        ])
+                },
+            ])
+        } catch(err) {
+            utils.slackNotification([stage: 'Unit Test', status: 'failure'])
+            throw err
+        }
     }
 }
 
@@ -51,17 +48,21 @@ if ( config.push_public_registry != false ) {
     stage ('Push Public Images') {
         try {
             if (config.demo) {
-                utils.pushDockerhub('mozorg/bedrock_demo')
+                utils.pushDockerhub('mozorg/bedrock')
             }
             else {
-                utils.pushDockerhub('mozorg/bedrock_base')
-                utils.pushDockerhub('mozorg/bedrock_build')
                 utils.pushDockerhub('mozorg/bedrock_test')
+                utils.pushDockerhub('mozorg/bedrock_assets')
                 utils.pushDockerhub('mozorg/bedrock_code')
-                utils.pushDockerhub('mozorg/bedrock_l10n', 'mozorg/bedrock')
+                utils.pushDockerhub('mozorg/bedrock_build')
+                utils.pushDockerhub('mozorg/bedrock')
+                // also upload static files to s3 bucket
+                // the script itself decides if this is a prod push or not
+                sh "bin/upload-staticfiles.sh"
             }
         } catch(err) {
-            utils.ircNotification([stage: 'Dockerhub Push Failed', status: 'warning'])
+            utils.slackNotification([stage: 'Dockerhub Push Failed', status: 'failure'])
+            throw err
         }
     }
 }
@@ -78,53 +79,29 @@ if ( config.push_public_registry != false ) {
 if ( config.apps ) {
     milestone()
     tested_apps = []
-    // default to usw only
-    def regions = config.regions ?: ['usw']
+    // default to oregon-b only
+    def regions = config.regions ?: ['oregon-b']
     for (regionId in regions) {
         def region = global_config.regions[regionId]
-        if (region.registry_port) {
-            def stageName = "Private Push: ${region.name}"
-            stage (stageName) {
-                try {
-                    utils.pushPrivateReg(region.registry_port, config.apps)
-                } catch(err) {
-                    utils.ircNotification([stage: stageName, status: 'failure'])
-                    throw err
-                }
-            }
-        }
         for (appname in config.apps) {
             if ( config.demo ) {
                 appURL = utils.demoAppURL(appname, region)
+                namespace = 'bedrock-demo'
             } else {
                 appURL = "https://${appname}.${region.name}.moz.works"
+                namespace = appname
             }
             stageName = "Deploy ${appname}-${region.name}"
             // ensure no deploy/test cycle happens in parallel for an app/region
             lock (stageName) {
                 milestone()
                 stage (stageName) {
-                    withEnv(["DEIS_PROFILE=${region.deis_profile}",
-                             "DEIS_BIN=${region.deis_bin}",
-                             "DOCKER_PRIVATE_REPO=${appname}",
-                             "DEIS_APPLICATION=${appname}"]) {
-                        try {
-                            retry(3) {
-                                if (config.demo) {
-                                    withCredentials([[$class: 'StringBinding',
-                                                      credentialsId: 'SENTRY_DEMO_DSN',
-                                                      variable: 'SENTRY_DEMO_DSN']]) {
-                                        sh 'docker/bin/prep_demo.sh'
-                                    }
-                                }
-                                sh 'docker/bin/push2deis.sh'
-                            }
-                        } catch(err) {
-                            utils.ircNotification([stage: stageName, status: 'failure'])
-                            throw err
-                        }
+                    if ( region.deis_bin ) {
+                        utils.pushDeis(region, config, appname, stageName)
+                    } else if (region.config_repo){
+                        utils.deploy(region, config, appname, stageName, namespace)
                     }
-                    utils.ircNotification([message: appURL, status: 'shipped'])
+                    utils.slackNotification([message: appURL, status: 'shipped'])
                 }
                 if ( config.integration_tests ) {
                     // queue up test closures
@@ -137,9 +114,13 @@ if ( config.apps ) {
                         try {
                             // wait for server to be ready
                             sleep(time: 10, unit: 'SECONDS')
-                            parallel allTests
+                            if ( allTests.size() == 1 ) {
+                                allTests[regionTests[0]]()
+                            } else {
+                                parallel allTests
+                            }
                         } catch(err) {
-                            utils.ircNotification([stage: "Integration Tests ${appname}-${region.name}", status: 'failure'])
+                            utils.slackNotification([stage: "Integration Tests ${appname}-${region.name}", status: 'failure'])
                             throw err
                         }
                         tested_apps << "${appname}-${region.name}".toString()
@@ -150,6 +131,6 @@ if ( config.apps ) {
     }
     if ( tested_apps ) {
         // huge success \o/
-        utils.ircNotification([message: "All tests passed: ${tested_apps.join(', ')}", status: 'success'])
+        utils.slackNotification([message: "All tests passed: ${tested_apps.join(', ')}", status: 'success'])
     }
 }

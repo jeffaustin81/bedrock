@@ -6,15 +6,14 @@ import os
 from datetime import date
 import json
 
-from django.conf import settings
 from django.core.cache import cache
 from django.db.utils import DatabaseError
 from django.http.response import Http404
+from django.test import override_settings
 from django.test.client import RequestFactory
-from django.test.utils import override_settings
 
 from bedrock.base.urlresolvers import reverse
-from mock import ANY, Mock, patch
+from mock import ANY, patch
 from nose.tools import eq_, ok_
 
 from bedrock.mozorg.tests import TestCase
@@ -22,19 +21,14 @@ from bedrock.mozorg import views
 from scripts import update_tableau_data
 
 
-_ALL = settings.STUB_INSTALLER_ALL
-
-
 class TestViews(TestCase):
     @patch.dict(os.environ, FUNNELCAKE_5_LOCALES='en-US', FUNNELCAKE_5_PLATFORMS='win')
-    @override_settings(STUB_INSTALLER_LOCALES={'release': {'win': _ALL}})
     def test_download_button_funnelcake(self):
         """The download button should have the funnelcake ID."""
         with self.activate('en-US'):
             resp = self.client.get(reverse('mozorg.home'), {'f': '5'})
             ok_('product=firefox-stub-f5&' in resp.content)
 
-    @override_settings(STUB_INSTALLER_LOCALES={'release': {'win': _ALL}})
     def test_download_button_bad_funnelcake(self):
         """The download button should not have a bad funnelcake ID."""
         with self.activate('en-US'):
@@ -100,196 +94,6 @@ class TestRobots(TestCase):
         self.assertEqual(response.get('Content-Type'), 'text/plain')
 
 
-class TestProcessPartnershipForm(TestCase):
-
-    def setUp(self):
-        self.factory = RequestFactory()
-        self.template = 'mozorg/partnerships.html'
-        self.view = 'mozorg.partnerships'
-        self.post_data = {
-            'first_name': 'The',
-            'last_name': 'Dude',
-            'title': 'Abider of things',
-            'company': 'Urban Achievers',
-            'email': 'thedude@example.com',
-        }
-        self.invalid_post_data = {
-            'first_name': 'The',
-            'last_name': 'Dude',
-            'title': 'Abider of things',
-            'company': 'Urban Achievers',
-            'email': 'thedude',
-        }
-
-        with self.activate('en-US'):
-            self.url = reverse(self.view)
-
-    def test_get(self):
-        """
-        A GET request should simply return a 200.
-        """
-
-        request = self.factory.get(self.url)
-        request.locale = 'en-US'
-        response = views.process_partnership_form(request, self.template,
-                                                  self.view)
-        self.assertEqual(response.status_code, 200)
-
-    def test_post(self):
-        """
-        POSTing without AJAX should redirect to self.url on success and
-        render self.template on error.
-        """
-
-        with self.activate('en-US'):
-            # test non-AJAX POST with valid form data
-            request = self.factory.post(self.url, self.post_data)
-
-            response = views.process_partnership_form(request, self.template,
-                                                      self.view)
-
-            # should redirect to success URL
-            self.assertEqual(response.status_code, 302)
-            self.assertIn(self.url, response._headers['location'][1])
-            self.assertIn('text/html', response._headers['content-type'][1])
-
-            # test non-AJAX POST with invalid form data
-            request = self.factory.post(self.url, self.invalid_post_data)
-
-            # locale is not getting set via self.activate above...?
-            request.locale = 'en-US'
-
-            response = views.process_partnership_form(request, self.template,
-                                                      self.view)
-
-            self.assertEqual(response.status_code, 200)
-            self.assertIn('text/html', response._headers['content-type'][1])
-
-    @patch('bedrock.mozorg.views.render_to_string',
-           return_value='rendered')
-    @patch('bedrock.mozorg.views.EmailMessage')
-    def test_post_ajax(self, mock_email_message, mock_render_to_string):
-        """
-        POSTing with AJAX should return success/error JSON.
-        """
-
-        with self.activate('en-US'):
-            mock_send = mock_email_message.return_value.send
-
-            # test AJAX POST with valid form data
-            request = self.factory.post(self.url, self.post_data,
-                                        HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-
-            response = views.process_partnership_form(request, self.template,
-                                                      self.view)
-
-            # decode JSON response
-            resp_data = json.loads(response.content)
-
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(response._headers['content-type'][1],
-                             'application/json')
-
-            # make sure email was sent
-            mock_send.assert_called_once_with()
-
-            # make sure email values are correct
-            mock_email_message.assert_called_once_with(
-                views.PARTNERSHIPS_EMAIL_SUBJECT,
-                'rendered',
-                views.PARTNERSHIPS_EMAIL_FROM,
-                views.PARTNERSHIPS_EMAIL_TO)
-
-            # test AJAX POST with invalid form data
-            request = self.factory.post(self.url, self.invalid_post_data,
-                                        HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-
-            response = views.process_partnership_form(request, self.template,
-                                                      self.view)
-
-            # decode JSON response
-            resp_data = json.loads(response.content)
-
-            self.assertEqual(resp_data['msg'], 'Form invalid')
-            self.assertEqual(response.status_code, 400)
-            self.assertTrue('email' in resp_data['errors'])
-            self.assertEqual(response._headers['content-type'][1],
-                             'application/json')
-
-    @patch('bedrock.mozorg.views.render_to_string',
-           return_value='rendered')
-    @patch('bedrock.mozorg.views.EmailMessage')
-    def test_post_ajax_honeypot(self, mock_email_message, mock_render_to_string):
-        """
-        POSTing with AJAX and honeypot should return success JSON.
-        """
-        with self.activate('en-US'):
-            mock_send = mock_email_message.return_value.send
-
-            self.post_data['office_fax'] = 'what is this?'
-            request = self.factory.post(self.url, self.post_data,
-                                        HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-
-            response = views.process_partnership_form(request, self.template,
-                                                      self.view)
-
-            # decode JSON response
-            resp_data = json.loads(response.content)
-
-            self.assertEqual(resp_data['msg'], 'ok')
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(response._headers['content-type'][1],
-                             'application/json')
-            ok_(not mock_send.called)
-
-    def test_post_ajax_error_xss(self):
-        """
-        POSTing with AJAX should return sanitized error messages.
-        Bug 945845.
-        """
-        with self.activate('en-US'):
-            # test AJAX POST with valid form data
-            post_data = self.post_data.copy()
-            post_data['interest'] = '"><img src=x onerror=alert(1);>'
-            escaped_data = '"&gt;&lt;img src=x onerror=alert(1);&gt;'
-            request = self.factory.post(self.url, post_data,
-                                        HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-
-            response = views.process_partnership_form(request, self.template,
-                                                      self.view)
-
-            # decode JSON response
-            resp_data = json.loads(response.content)
-
-            self.assertEqual(resp_data['msg'], 'Form invalid')
-            self.assertEqual(response.status_code, 400)
-            self.assertTrue(post_data['interest'] not in resp_data['errors']['interest'][0])
-            self.assertTrue(escaped_data in resp_data['errors']['interest'][0])
-            self.assertEqual(response._headers['content-type'][1],
-                             'application/json')
-
-    @patch('bedrock.mozorg.views.render_to_string',
-           return_value='rendered')
-    @patch('bedrock.mozorg.views.EmailMessage')
-    def test_lead_source(self, mock_email_message, mock_render_to_string):
-        """
-        A POST request should include the 'lead_source' field in that call. The
-        value will be defaulted to 'www.mozilla.org/about/partnerships/' if it's
-        not specified.
-        """
-
-        def _req(form_kwargs):
-            request = self.factory.post(self.url, self.post_data)
-            views.process_partnership_form(request, self.template,
-                                           self.view, {}, form_kwargs)
-
-            return str(mock_render_to_string.call_args[0][1])
-
-        self.assertTrue('www.mozilla.org/about/partnerships/' in _req(None))
-        self.assertTrue('www.mozilla.org/firefox/partners/' in
-                        _req({'lead_source': 'www.mozilla.org/firefox/partners/'}))
-
-
 class TestMozIDDataView(TestCase):
     def setUp(self):
         with patch.object(update_tableau_data, 'get_external_data') as ged:
@@ -347,7 +151,6 @@ class TestTechnology(TestCase):
         view.request.locale = 'en-US'
         eq_(view.get_template_names(), ['mozorg/technology-en.html'])
 
-    @patch.object(views, 'lang_file_is_active', lambda *x: False)
     def test_technology_locale_template(self, render_mock):
         view = views.TechnologyView()
         view.request = RequestFactory().get('/technology/')
@@ -356,31 +159,146 @@ class TestTechnology(TestCase):
 
 
 @patch('bedrock.mozorg.views.l10n_utils.render')
-class TestHome(TestCase):
-    @patch('bedrock.mozorg.views.switch', Mock(return_value=True))
-    def test_home_enUS_experiment_enabled(self, render_mock):
-        request = RequestFactory().get('/')
-        request.locale = 'en-US'
-        views.home(request)
-        render_mock.assert_called_once_with(request, 'mozorg/home/home-b.html')
+class TestHomePage(TestCase):
+    def setUp(self):
+        self.rf = RequestFactory()
 
-    @patch('bedrock.mozorg.views.switch', Mock(return_value=False))
-    def test_home_enUS_experiment_disabled(self, render_mock):
-        request = RequestFactory().get('/')
-        request.locale = 'en-US'
-        views.home(request)
-        render_mock.assert_called_once_with(request, 'mozorg/home/home.html')
+    def test_home_en_template(self, render_mock):
+        req = RequestFactory().get('/')
+        req.locale = 'en-US'
+        views.home_view(req)
+        render_mock.assert_called_once_with(req, 'mozorg/home/home-en.html', ANY)
 
-    @patch('bedrock.mozorg.views.switch', Mock(return_value=True))
-    def test_home_non_enUS_experiment_enabled(self, render_mock):
-        request = RequestFactory().get('/')
-        request.locale = 'fr'
-        views.home(request)
-        render_mock.assert_called_once_with(request, 'mozorg/home/home.html')
+    def test_home_locale_template(self, render_mock):
+        req = RequestFactory().get('/')
+        req.locale = 'de'
+        views.home_view(req)
+        render_mock.assert_called_once_with(req, 'mozorg/home/home.html', ANY)
 
-    @patch('bedrock.mozorg.views.switch', Mock(return_value=False))
-    def test_home_non_enUS_experiment_disabled(self, render_mock):
-        request = RequestFactory().get('/')
-        request.locale = 'fr'
-        views.home(request)
-        render_mock.assert_called_once_with(request, 'mozorg/home/home.html')
+
+@patch('bedrock.mozorg.views.l10n_utils.render')
+class TestAboutPage(TestCase):
+    def setUp(self):
+        self.rf = RequestFactory()
+
+    def test_about_en_template(self, render_mock):
+        req = RequestFactory().get('/')
+        req.locale = 'en-US'
+        views.about_view(req)
+        render_mock.assert_called_once_with(req, 'mozorg/about-en.html')
+
+    def test_about_locale_template(self, render_mock):
+        req = RequestFactory().get('/')
+        req.locale = 'de'
+        views.about_view(req)
+        render_mock.assert_called_once_with(req, 'mozorg/about.html')
+
+
+@override_settings(DEV=True)
+class TestOAuthFxa(TestCase):
+    def setUp(self):
+        self.rf = RequestFactory()
+
+    @override_settings(DEV=False)
+    @override_settings(SWITCH_FIREFOX_CONCERT_SERIES=False)
+    def test_switch_off(self):
+        """Should redirect to the home page if the whole system is turned off"""
+        req = self.rf.get('/mozorg/oauth/fxa?state=thedude&code=abides')
+        response = views.oauth_fxa(req)
+        eq_(response.status_code, 302)
+        eq_(response['Location'], '/')
+
+    def test_missing_expected_state(self):
+        req = self.rf.get('/mozorg/oauth/fxa?state=thedude&code=abides')
+        response = views.oauth_fxa(req)
+        eq_(response.status_code, 302)
+        eq_(response['Location'], '/oauth/fxa/error/')
+
+    def test_missing_provided_state(self):
+        req = self.rf.get('/mozorg/oauth/fxa?code=abides')
+        req.COOKIES['fxaOauthState'] = 'thedude'
+        response = views.oauth_fxa(req)
+        eq_(response.status_code, 302)
+        eq_(response['Location'], '/oauth/fxa/error/')
+
+    def test_state_mismatch(self):
+        req = self.rf.get('/mozorg/oauth/fxa?state=thedude&code=abides')
+        req.COOKIES['fxaOauthState'] = 'walter'
+        response = views.oauth_fxa(req)
+        eq_(response.status_code, 302)
+        eq_(response['Location'], '/oauth/fxa/error/')
+
+    def test_missing_code(self):
+        req = self.rf.get('/mozorg/oauth/fxa?state=thedude')
+        req.COOKIES['fxaOauthState'] = 'thedude'
+        response = views.oauth_fxa(req)
+        eq_(response.status_code, 302)
+        eq_(response['Location'], '/oauth/fxa/error/')
+
+    @patch('bedrock.mozorg.views.get_fxa_oauth_token')
+    def test_token_failure(self, gfot_mock):
+        req = self.rf.get('/mozorg/oauth/fxa?state=thedude&code=abides')
+        req.COOKIES['fxaOauthState'] = 'thedude'
+        gfot_mock.return_value = None
+        response = views.oauth_fxa(req)
+        eq_(response.status_code, 302)
+        eq_(response['Location'], '/oauth/fxa/error/')
+
+    @patch('bedrock.mozorg.views.get_fxa_oauth_token')
+    @patch('bedrock.mozorg.views.get_fxa_profile_email')
+    def test_email_failure(self, gfpe_mock, gfot_mock):
+        req = self.rf.get('/mozorg/oauth/fxa?state=thedude&code=abides')
+        req.COOKIES['fxaOauthState'] = 'thedude'
+        gfot_mock.return_value = 'atoken'
+        gfpe_mock.return_value = None
+        response = views.oauth_fxa(req)
+        eq_(response.status_code, 302)
+        eq_(response['Location'], '/oauth/fxa/error/')
+
+    @patch('bedrock.mozorg.views.get_fxa_oauth_token')
+    @patch('bedrock.mozorg.views.get_fxa_profile_email')
+    @patch('bedrock.mozorg.views.fxa_concert_rsvp')
+    def test_rsvp_failure(self, rsvp_mock, gfpe_mock, gfot_mock):
+        req = self.rf.get('/mozorg/oauth/fxa?state=thedude&code=abides')
+        req.COOKIES['fxaOauthState'] = 'thedude'
+        gfot_mock.return_value = 'atoken'
+        gfpe_mock.return_value = 'maude@example.com'
+        rsvp_mock.return_value = None
+        response = views.oauth_fxa(req)
+        eq_(response.status_code, 302)
+        eq_(response['Location'], '/oauth/fxa/error/')
+
+    @patch('bedrock.mozorg.views.get_fxa_oauth_token')
+    @patch('bedrock.mozorg.views.get_fxa_profile_email')
+    @patch('bedrock.mozorg.views.fxa_concert_rsvp')
+    def test_success(self, rsvp_mock, gfpe_mock, gfot_mock):
+        req = self.rf.get('/mozorg/oauth/fxa?state=thedude&code=abides')
+        req.COOKIES['fxaOauthState'] = 'thedude'
+        gfot_mock.return_value = 'atoken'
+        gfpe_mock.return_value = 'maude@example.com'
+        response = views.oauth_fxa(req)
+        assert response.cookies['fxaOauthVerified'].value == 'True'
+        eq_(response.status_code, 302)
+        eq_(response['Location'], '/firefox/concerts/')
+
+    @patch('bedrock.mozorg.views.get_fxa_oauth_token')
+    @patch('bedrock.mozorg.views.get_fxa_profile_email')
+    @patch('bedrock.mozorg.views.fxa_concert_rsvp')
+    def test_rsvp_is_firefox(self, rsvp_mock, gfpe_mock, gfot_mock):
+        req = self.rf.get('/mozorg/oauth/fxa?state=thedude&code=abides', HTTP_USER_AGENT='Firefox')
+        req.COOKIES['fxaOauthState'] = 'thedude'
+        gfot_mock.return_value = 'atoken'
+        gfpe_mock.return_value = 'maude@example.com'
+        views.oauth_fxa(req)
+        rsvp_mock.assert_called_with('maude@example.com', True)
+
+    @patch('bedrock.mozorg.views.get_fxa_oauth_token')
+    @patch('bedrock.mozorg.views.get_fxa_profile_email')
+    @patch('bedrock.mozorg.views.fxa_concert_rsvp')
+    def test_rsvp_not_firefox(self, rsvp_mock, gfpe_mock, gfot_mock):
+        req = self.rf.get('/mozorg/oauth/fxa?state=thedude&code=abides', HTTP_USER_AGENT='Safari')
+        req.COOKIES['fxaOauthState'] = 'thedude'
+        gfot_mock.return_value = 'atoken'
+        gfpe_mock.return_value = 'maude@example.com'
+        views.oauth_fxa(req)
+        rsvp_mock.assert_called_with('maude@example.com', False)

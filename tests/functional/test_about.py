@@ -9,8 +9,6 @@ from pages.about import AboutPage
 
 @pytest.mark.smoke
 @pytest.mark.nondestructive
-def test_play_video(base_url, selenium):
+def test_read_mission_button_displayed(base_url, selenium):
     page = AboutPage(selenium, base_url).open()
-    page.play_video()
-    assert not page.is_video_overlay_displayed
-    assert page.is_video_displayed
+    assert page.is_read_mission_button_displayed

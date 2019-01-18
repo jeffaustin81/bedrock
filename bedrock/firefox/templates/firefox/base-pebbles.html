@@ -6,6 +6,7 @@
 
 {% block page_title_prefix %}{% endblock %}
 {% block page_title_suffix %}{% endblock %}
+
 {% block page_image %}{{ static('img/firefox/template/page-image.png') }}{% endblock %}
 {% block page_favicon %}{{ static('img/firefox/favicon.ico') }}{% endblock %}
 {% block page_favicon_large %}{{ static('img/firefox/favicon-196.png') }}{% endblock %}
@@ -20,7 +21,7 @@
 
 {% block site_header %}
   {% if LANG.startswith('en-') %}
-    {% include 'includes/global-nav.html' %}
+    {% include 'includes/protocol/navigation/index.html' %}
   {% else %}
     {% set logo_src = static('img/pebbles/moz-wordmark-dark-reverse.svg') %}
     {% include 'mozorg/home/includes/nav.html' %}

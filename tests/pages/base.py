@@ -6,12 +6,12 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
 
 from pypom import Page, Region
-from regions.newsletter import NewsletterEmbedForm
+from regions.newsletter import NewsletterEmbedForm, LegacyNewsletterEmbedForm
 
 
 class BasePage(Page):
 
-    URL_TEMPLATE = '/{locale}'
+    URL_TEMPLATE = '/{locale}/'
 
     def __init__(self, selenium, base_url, locale='en-US', **url_kwargs):
         super(BasePage, self).__init__(selenium, base_url, locale=locale, **url_kwargs)
@@ -33,6 +33,10 @@ class BasePage(Page):
     @property
     def newsletter(self):
         return NewsletterEmbedForm(self)
+
+    @property
+    def legacy_newsletter(self):
+        return LegacyNewsletterEmbedForm(self)
 
     class Navigation(Region):
 

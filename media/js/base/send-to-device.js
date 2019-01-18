@@ -144,7 +144,6 @@ if (typeof Mozilla === 'undefined') {
      */
     SendToDevice.prototype.bindEvents = function() {
         this.$form.on('submit', $.proxy(this.onFormSubmit, this));
-        this.$footerLinks.on('click', 'a', this.trackFooterLinks);
         this.$sendAnotherLink.on('click', $.proxy(this.sendAnother, this));
     };
 
@@ -167,7 +166,7 @@ if (typeof Mozilla === 'undefined') {
         this.$thankyou.addClass('hidden');
         this.$formHeading.removeClass('hidden');
         this.$formFields.removeClass('hidden');
-        this.$input.focus();
+        this.$input.trigger('focus');
     };
 
     /**

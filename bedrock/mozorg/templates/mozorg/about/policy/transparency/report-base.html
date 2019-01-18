@@ -8,20 +8,14 @@
 {% block body_class %}sand about-transparency{% endblock %}
 
 {% block page_css %}
-  {% stylesheet 'about-transparency' %}
+  {{ css_bundle('about-transparency') }}
 {% endblock %}
 
 {% block js %}
-  <!--[if IE 9]>
-  {% javascript 'matchmedia_addlistener' %}
-  <![endif]-->
-  {% javascript 'about-transparency' %}
+  {{ js_bundle('about-transparency') }}
 {% endblock %}
 
 {% block content %}
-  <div class="data-header">
-    <img src="{{ static('img/mozorg/about/transparency/hero-transparency.svg') }}" alt="">
-  </div>
   <main role="main">
     <header class="title-bar">
       <div class="content">
@@ -29,8 +23,10 @@
       </div>
     </header>
 
-  <div id="report-sections" class="report accordion">
-  {% block report_body %}{% endblock %}
+  <div class="content">
+    <div id="report-sections" class="report accordion">
+    {% block report_body %}{% endblock %}
+    </div>
   </div>
 
   {% block report_nav %}

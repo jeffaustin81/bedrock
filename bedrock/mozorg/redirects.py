@@ -1,4 +1,4 @@
-from bedrock.redirects.util import redirect, ua_redirector
+from bedrock.redirects.util import gone, redirect, ua_redirector
 
 
 def to_uppercase(url):
@@ -10,8 +10,8 @@ def to_uppercase(url):
 
 
 redirectpatterns = (
-    # bug 755826, 1222348
-    redirect(r'^zh-CN/?$', 'http://www.firefox.com.cn/', locale_prefix=False, query={
+    # bug 755826, 1222348, 1416798
+    redirect(r'^zh-CN/?$', 'https://www.firefox.com.cn/', locale_prefix=False, query={
         'utm_medium': 'referral',
         'utm_source': 'mozilla.org'
     }),
@@ -118,39 +118,10 @@ redirectpatterns = (
     redirect(r'^projects/?$', 'firefox'),
 
     # Bug 792185 Brand Toolkit -> Style Guide
-    redirect(r'^firefox/brand/?$', 'styleguide.home'),
-    redirect(r'^firefox/brand/platform/?$',
-             'styleguide.identity.firefox-family-platform'),
-    redirect(r'^firefox/brand/identity/?$',
-             'styleguide.identity.firefox-branding'),
-    redirect(r'^firefox/brand/identity/channel-logos/?$',
-             'styleguide.identity.firefox-channels'),
-    redirect(r'^firefox/brand/identity/wordmarks/?$',
-             'styleguide.identity.firefox-wordmarks'),
-    redirect(r'^firefox/brand/identity/typefaces/?$',
-             'styleguide.communications.typefaces'),
-    redirect(r'^firefox/brand/artwork/?$', 'styleguide.home'),
-    redirect(r'^firefox/brand/artwork/gear/?$', 'styleguide.home'),
-    redirect(r'^firefox/brand/website/?$',
-             'styleguide.websites.sandstone-intro'),
-    redirect(r'^firefox/brand/website/domain-strategy/?$',
-             'styleguide.websites.domains-overview'),
-    redirect(r'^firefox/brand/copy/?$', 'styleguide.communications.copy-tone'),
-    redirect(r'^firefox/brand/copy/l10n/?$',
-             'styleguide.communications.translation'),
-    redirect(r'^firefox/brand/copy/rules/?$',
-             'styleguide.communications.copy-rules'),
-    redirect(r'^firefox/brand/downloads/?$', 'styleguide.home'),
-
-    # Bug 1071318
-    redirect(r'^firefox/mobile/?$', 'firefox.android.index'),
+    redirect(r'^firefox/brand(/.*)?', 'styleguide.index'),
 
     # Bug 804810 Identity Guidelines -> Style Guide
-    redirect(r'^foundation/identity-guidelines/index.html', 'styleguide.home'),
-    redirect(r'^foundation/identity-guidelines/mozilla-foundation.html',
-             'styleguide.identity.mozilla-branding'),
-    redirect(r'^foundation/identity-guidelines/thunderbird.html',
-             'styleguide.identity.thunderbird-logo'),
+    redirect(r'^foundation/identity-guidelines(/.*)?', 'styleguide.index'),
 
     # Bug 945474 - delete Marketplace marketing product page
     # and redirect
@@ -166,10 +137,11 @@ redirectpatterns = (
 
     # Bug 1109318 /privacy/you -> privacy/tips/
     # Bug 1238687 /privacy/tips -> teach/smarton/
+    # Bug 1436740 /privacy/tips -> internet-health/privacy-security/
     redirect(r'^privacy/you/?$',
-             'teach.smarton.index'),
+             'mozorg.internet-health.privacy-security'),
     redirect(r'^privacy/tips/?$',
-             'teach.smarton.index'),
+             'mozorg.internet-health.privacy-security'),
 
     # Bug 821047 /about/mission.html -> /mission/
     redirect(r'^about/mission.html$', '/mission/'),
@@ -214,6 +186,8 @@ redirectpatterns = (
     redirect(r'^legal/eula/?$', '/about/legal/eula/'),
     redirect(r'^legal/eula/firefox-2/?$', '/about/legal/eula/firefox-2/'),
     redirect(r'^legal/eula/firefox-3/?$', '/about/legal/eula/firefox-3/'),
+    # bug 1405436
+    redirect(r'^legal/eula/firefox', '/about/legal/terms/firefox/'),
 
     # Bug 1209643
     redirect(r'^legal/bylaws_amendment_(?P<n>[12])(\.html|/)?', '/foundation/documents/bylaws-amendment-{n}/'),
@@ -221,12 +195,11 @@ redirectpatterns = (
     redirect(r'^legal/amendment(\.html|/)?', 'foundation.documents.articles-of-incorporation-amendment'),
     redirect(r'^legal/bylaws(\.html|/)?', 'foundation.documents.bylaws'),
 
-    # bug 960689, 1013349, 896474
+    # bug 960689, 896474
     redirect(r'^about/legal\.html', 'legal.index'),
-    redirect(r'^about/partnerships\.html', 'mozorg.partnerships'),
 
-    # Bug 1073269 /dnt/ -> /firefox/dnt/
-    redirect(r'^dnt/?$', 'firefox.dnt'),
+    # Bug 1073269
+    redirect(r'^dnt/?$', 'https://support.mozilla.org/kb/how-do-i-turn-do-not-track-feature'),
 
     # bug 1205632
     redirect(r'^js/language(?:/|/index.html)?$',
@@ -256,14 +229,12 @@ redirectpatterns = (
     # bug 854561
     redirect(r'^projects/mozilla-based(\.html|/)?', 'mozorg.projects.mozilla-based'),
 
-    # bug 851727
-    redirect(r'^projects/powered-by(\.html|/)?', 'mozorg.powered-by'),
+    # issue 851727
+    redirect(r'^projects/powered-by(\.html|/)?', 'mozorg.home'),
+    redirect(r'^about/powered-by/?', 'mozorg.home'),
 
     # bug 957664
     redirect(r'^press/awards(?:/|\.html)?$', 'https://blog.mozilla.org/press/awards/'),
-
-    # bug 885799, 952429
-    redirect(r'^projects/calendar/holidays\.html$', 'mozorg.projects.holiday_calendars'),
 
     # bug 876810
     redirect(r'^hacking/commit-access-policy/?$',
@@ -578,9 +549,6 @@ redirectpatterns = (
     # bug 1236910
     redirect(r'^support(/.*)?$', 'https://support.mozilla.org/'),
 
-    # bug 1233015
-    redirect(r'^about/partnerships/contentservices(/.*)?$', 'mozorg.partnerships'),
-
     # Bug 1235853
     redirect(r'^facebookapps(/.*)?$', 'firefox.new'),
 
@@ -660,4 +628,32 @@ redirectpatterns = (
 
     # Bug 1384370
     redirect(r'^developers/?$', 'mozorg.developer'),
+
+    # Bug 1438464
+    redirect(r'^collusion/?$', 'https://addons.mozilla.org/firefox/addon/lightbeam/'),
+    redirect(r'^lightbeam(/.*)?', 'https://addons.mozilla.org/firefox/addon/lightbeam/'),
+
+    # Bug 1428150
+    gone(r'^tabzilla/transbar\.jsonp$'),
+    gone(r'^tabzilla/tabzilla\.js$'),
+    gone(r'^tabzilla/media/js/tabzilla\.js$'),
+    redirect(r'tabzilla/media/css/tabzilla\.css$',
+             'https://mozorg.cdn.mozilla.net/media/css/tabzilla-min.css',
+             locale_prefix=False),
+
+    # Bug 1430887
+    redirect(r'^firefox/geolocation/?$', 'https://support.mozilla.org/kb/does-firefox-share-my-location-web-sites'),
+
+    # Bug 1422080, 1013349, 1233015
+    redirect(r'^about/partnerships/?$', 'mozorg.contact.contact-landing'),
+    redirect(r'^about/partnerships/contentservices(/.*)?$', 'mozorg.contact.contact-landing'),
+    redirect(r'^about/partnerships\.html', 'mozorg.contact.contact-landing'),
+
+    # Bug 1436740
+    redirect(r'^teach/?$', 'mozorg.internet-health'),
+    redirect(r'^teach/smarton/?$', 'mozorg.internet-health'),
+    redirect(r'^teach/smarton/(?:tracking|security|surveillance)/?$', 'mozorg.internet-health.privacy-security'),
+
+    # issue 6266
+    redirect(r'^about/policy/leandata/?$', 'mozorg.about.policy.lean-data.index'),
 )

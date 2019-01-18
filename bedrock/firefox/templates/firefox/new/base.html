@@ -4,39 +4,39 @@
 
 {% from "macros.html" import google_play_button with context %}
 
-{% add_lang_files "firefox/new/onboarding" %}
+{% add_lang_files "firefox/new/quantum" %}
 
-{% extends "firefox/base-resp.html" %}
+{% extends "firefox/base-pebbles.html" %}
 
-{% block page_title_prefix %}{{_('Download Firefox')}} — {% endblock %}
-{% block page_title %}{{_('Free Web Browser')}}{% endblock %}
-{% block page_desc %}
-  {% if l10n_has_tag('macos_branding') %}
-    {{_('Download Mozilla Firefox, a free Web browser. Firefox is created by a global non-profit dedicated to putting individuals in control online. Get Firefox for Windows, macOS, Linux, Android and iOS today!')}}
+{%- block page_title -%}{{_('Download Firefox - Free Web Browser')}}{%- endblock -%}
+
+{# Bug 1438302 Avoid duplicate content for en-CA and en-GB pages. #}
+{%- block page_title_suffix -%}
+  {% if LANG == 'en-CA' %}
+    — Mozilla (CA)
+  {% elif LANG == 'en-GB' %}
+    — Mozilla (UK)
   {% else %}
-    {{_('Download Mozilla Firefox, a free Web browser. Firefox is created by a global non-profit dedicated to putting individuals in control online. Get Firefox for Windows, Mac OS X, Linux, Android and iOS today!')}}
+    — Mozilla
   {% endif %}
-{% endblock %}
+{%- endblock -%}
+
+{% block page_desc %}{{_('Download Mozilla Firefox, a free Web browser. Firefox is created by a global non-profit dedicated to putting individuals in control online. Get Firefox for Windows, macOS, Linux, Android and iOS today!')}}{% endblock %}
 
 {#- This will appear as <meta property="og:title"> which can be used for social share -#}
-{% block page_og_title %}
-  {{ _('Chart your own course') }}
-{% endblock %}
+{% block page_og_title %}{{_('Download the fastest Firefox ever')}}{% endblock %}
 
 {#- This will appear as <meta property="og:description"> which can be used for social share -#}
-{% block page_og_desc %}
-  {{_('Firefox is non-profit, non-corporate, non-compromised. Choosing Firefox isn’t just choosing a browser. It’s a vote for personal freedom.')}}
-{% endblock %}
+{% block page_og_desc %}{{_('Faster page loading, less memory usage and packed with features, the new Firefox is here.')}}{% endblock %}
 
-{#- This will appear as <meta property="og:image"> which can be used for social share -#}
-{% block page_image %}
-  {{ static('img/firefox/firefox-independent-1200.jpg') }}
-{% endblock %}
+{% block old_ie_styles %}{% endblock %}
+{% block site_css %}{% endblock %}
+{% block page_css %}{% endblock %}
 
-{% block optimizely %}
-  {% if switch('firefox-new-optimizely') %}
-    {% include 'includes/optimizely.html' %}
-  {% endif %}
+{# All stylesheets are loaded in extrahead to serve legacy IE basic styles #}
+{% block extrahead %}
+  {{ css_bundle('pebbles') }}
+  {{ css_bundle('firefox_new_common') }}
 {% endblock %}
 
 {% block body_id %}{% endblock %}
@@ -44,10 +44,41 @@
 
 {% block site_header %}{% endblock %}
 
-{% block site_css %}{% endblock %}
-{% block extrahead %}{% endblock %}
-
-{% block content %}{% endblock %}
+{% block content %}
+{# Bug 1438302 Avoid duplicate content for en-CA and en-GB pages. #}
+{% if LANG == 'en-CA' %}
+  {% set firefox_logo_title = 'Firefox (CA)' %}
+  {% set mozilla_logo_title = 'Mozilla (CA)' %}
+{% elif LANG == 'en-GB' %}
+  {% set firefox_logo_title = 'Firefox (UK)' %}
+  {% set mozilla_logo_title = 'Mozilla (UK)' %}
+{% else %}
+  {% set firefox_logo_title = 'Firefox' %}
+  {% set mozilla_logo_title = 'Mozilla' %}
+{% endif %}
+<main role="main">
+  <div class="main-content">
+    {% block messages %}{% endblock %}
+    <div class="content">
+      <div class="header-logos">
+        <h2><a class="firefox" href="{{ url('firefox') }}" title="{{ firefox_logo_title }}">{{ high_res_img('logos/firefox/logo-quantum-wordmark-white.png', {'alt': firefox_logo_title, 'width': '133', 'height': '50'}) }}</a></h2>
+        <h2><a class="mozilla" href="{{ url('mozorg.home') }}" title="{{ mozilla_logo_title }}"><img src="{{ static('img/logos/mozilla/wordmark-dark.svg')}}" alt="{{ mozilla_logo_title }}" width="101" height="34"></a></h2>
+      </div>
+      <div class="header-container">
+        <div class="header-content">
+          {% block main_title %}{% endblock %}
+          {% block main_content %}{% endblock %}
+        </div>
+        <div class="header-image">
+          {{ high_res_img('firefox/new/browser.png', {'alt': _('Screenshot'), 'width': '700', 'height': '529'}) }}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% block features_content %}{% endblock %}
+  {% block additional_content %}{% endblock %}
+</main>
+{% endblock %}
 
 {% block email_form %}{% endblock %}
 

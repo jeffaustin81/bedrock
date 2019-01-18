@@ -14,11 +14,11 @@
 {% block body_class %}sky happy{% endblock %}
 
 {% block page_css %}
-  {% stylesheet 'firefox_feedback' %}
+  {{ css_bundle('firefox_feedback') }}
 {% endblock %}
 
 {% block js %}
-  {% javascript 'firefox_feedback' %}
+  {{ js_bundle('firefox_feedback') }}
 {% endblock %}
 
 {% block site_header_nav %}{% endblock %}
@@ -54,14 +54,14 @@
 
   <div class="secondary">
     <aside class="action-secondary cta-sync">
-      <a data-name="CTA Firefox Sync" href="{{ url('firefox.features.sync') }}?utm_source=happyheartbeat&amp;utm_medium=heartbeat&amp;utm_content=SyncCTA&amp;utm_campaign=Sync">
+      <a data-name="CTA Firefox Sync" href="{{ url('firefox.accounts') }}?utm_source=happyheartbeat&amp;utm_medium=heartbeat&amp;utm_content=SyncCTA&amp;utm_campaign=Sync">
         <h2>{{ _('Stay in Sync') }}</h2>
         <p>{{ _('Sign in or sign up to sync your Firefox tabs, bookmarks, passwords and more.') }}</p>
       </a>
     </aside>
 
     <aside class="action-secondary cta-android">
-      <a data-name="CTA Firefox for Android" href="{{ url('firefox.android.index') }}?utm_source=happyheartbeat&amp;utm_medium=heartbeat&amp;utm_content=AndroidCTA&amp;utm_campaign=FirefoxforAndroid">
+      <a data-name="CTA Firefox for Android" href="{{ url('firefox.mobile') }}?utm_source=happyheartbeat&amp;utm_medium=heartbeat&amp;utm_content=AndroidCTA&amp;utm_campaign=FirefoxforAndroid">
         <h2>{{ _('Get Firefox for Android') }}</h2>
         <p>{{ _('Send Firefox to your smartphone or tablet') }}</p>
       </a>

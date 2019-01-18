@@ -5,7 +5,21 @@
 {% block body_id %}firefox-releases-index{% endblock %}
 
 {% block page_css %}
-  {% stylesheet 'firefox_releases_index' %}
+  {{ css_bundle('firefox_releases_index') }}
+{% endblock %}
+
+{% block global_nav %}
+  {% if LANG.startswith('en-') %}
+    {% include 'includes/protocol/navigation/index.html' %}
+  {% endif %}
+{% endblock %}
+
+{% block tabzilla_tab %}{% endblock %}
+
+{% block site_header_nav %}
+  {% if not LANG.startswith('en-') %}
+    {% include 'firefox/includes/top-menu.html' %}
+  {% endif %}
 {% endblock %}
 
 {% block breadcrumbs %}

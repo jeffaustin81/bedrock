@@ -84,3 +84,72 @@ For all download buttons, add these data attributes:
 |   data-download-version  |'standard', 'developer', 'beta' |
 +--------------------------+--------------------------------+
 
+For all conditional banners, add the following calls.
+
+When a banner is shown:
+
+.. code-block:: javascript
+
+    dataLayer.push({
+        'eLabel': 'Banner Impression',
+        'data-banner-name': '<banner name>', //ex. Fb-Video-Compat
+        'data-banner-impression': '1',
+        'event': 'non-interaction'
+    });
+
+When an element in the banner is clicked:
+
+.. code-block:: javascript
+
+    dataLayer.push({
+        'eLabel': 'Banner Clickthrough',
+        'data-banner-name': '<banner name>', //ex. Fb-Video-Compat
+        'data-banner-click': '1',
+        'event': 'in-page-interaction'
+    });
+
+When a banner is dismissed:
+
+.. code-block:: javascript
+
+    dataLayer.push({
+        'eLabel': 'Banner Dismissal',
+        'data-banner-name': '<banner name>', //ex. Fb-Video-Compat
+        'data-banner-dismissal': '1',
+        'event': 'in-page-interaction'
+    });
+
+
+When doing a/b tests configure something like the following.
+
+.. code-block:: javascript
+
+    if(href.indexOf('v=a') !== -1) {
+        window.dataLayer.push({
+            'data-ex-variant': 'de-page',
+            'data-ex-name': 'Berlin-Campaign-Landing-Page'
+        });
+    } else if (href.indexOf('v=b') !== -1) {
+        window.dataLayer.push({
+            'data-ex-variant': 'campaign-page',
+            'data-ex-name': 'Berlin-Campaign-Landing-Page'
+        });
+    }
+
+
+Some notes on how this looks in GA
+----------------------------------
+
+``data-link-type="button"`` and ``data-link-name=""`` trigger a generic link
+click with the following structure:
+
+    | Event Category: {{page ID}} Interactions
+    | Event Action: {{data-link-type}} click
+    | Event Label: {{data-link-name}}
+
+Any element that has a ``data-button-name=""`` triggers an event with this
+structure:
+
+    | Event Category: {{page ID}} Interactions
+    | Event Action: button click
+    | Event Label: {{data-button-name}}

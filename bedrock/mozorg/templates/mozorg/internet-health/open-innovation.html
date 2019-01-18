@@ -16,12 +16,12 @@
 {% block body_attrs %}{{ super() }} data-global-nav-current-link="internet-health"{% endblock %}
 
 {% block page_css %}
-  {% stylesheet 'health-subpage' %}
+  {{ css_bundle('health-subpage') }}
 {% endblock %}
 
 {% block site_header %}
   {% if LANG.startswith('en-') %}
-    {% include 'includes/global-nav.html' %}
+    {% include 'includes/protocol/navigation/index.html' %}
   {% else %}
     {% set logo_src = static('img/pebbles/moz-wordmark-dark-reverse.svg') %}
     {% include 'mozorg/home/includes/nav.html' %}
@@ -29,7 +29,9 @@
 {% endblock %}
 
 {% block content %}
-{% include 'mozorg/internet-health/includes/sub-nav.html' %}
+{% with current='openness' %}
+  {% include 'mozorg/internet-health/includes/sub-nav.html' %}
+{% endwith %}
 
 <main role="main">
   <header class="section main-header">
@@ -126,12 +128,16 @@
             <li>
               <h4>{{ _('Contribute to a project') }}</h4>
               <p>
-              {% trans contribute=url('mozorg.contribute.index'),
-                       open_hatch='https://openhatch.org/'
-              %}
-                Contribute to an existing open source project. Become a <a href="{{ contribute }}">Mozillian!</a>
-                Or use <a href="{{ open_hatch }}">OpenHatch</a> to match your skillset to a project.
-              {% endtrans %}
+              {% if l10n_has_tag('open-innovation-update-20171130') %}
+                  {% trans contribute=url('mozorg.contribute.index') %}
+                     Contribute to an existing open source project. Become a <a href="{{ contribute }}">Mozillian!</a>
+                  {% endtrans %}
+              {% else %}
+                  {% trans contribute=url('mozorg.contribute.index'),
+                           open_hatch='https://openhatch.org/' %}
+                     Contribute to an existing open source project. Become a <a href="{{ contribute }}">Mozillian!</a> Or use <a href="{{ open_hatch }}">OpenHatch</a> to match your skillset to a project.
+                  {% endtrans %}
+              {% endif %}
               </p>
             </li>
             <li>
@@ -379,9 +385,13 @@
       <h2>{{ _('Hungry for more?') }}</h2>
       <p class="report-cta">
         <span>
-        {% trans healthreport='https://internethealthreport.org' %}
-          Read on about Open Innovation in our <a href="{{ healthreport }}">Internet Health Report</a>.
-        {% endtrans %}
+        {% if LANG.startswith('en-') %}
+          Keep reading in our <a href="https://internethealthreport.org">Internet Health Report</a> or <a href="https://assets.mozilla.net/pdf/IHPbriefs_Openness_March_2017.pdf" data-link-type="document-download" data-link-name="IH Brief:open-innovation">Open Innovation brief (PDF)</a>.
+        {% else %}
+          {% trans healthreport='https://internethealthreport.org' %}
+            Read on about Open Innovation in our <a href="{{ healthreport }}">Internet Health Report</a>.
+          {% endtrans %}
+        {% endif %}
         </span>
       </p>
     </div>
@@ -403,5 +413,5 @@
 {% block email_form %}{% endblock %}
 
 {% block js %}
-  {% javascript 'internet-health-subpage' %}
+  {{ js_bundle('internet-health-subpage') }}
 {% endblock %}

@@ -6,10 +6,11 @@
 
 {% extends "/firefox/base-resp.html" %}
 
-{% block extra_meta %}<meta name="robots" content="noindex">{% endblock %}
+{# "noindex" pages should not have the canonical or hreflang tags: bug 1442331 #}
+{% block canonical_urls %}<meta name="robots" content="noindex,follow">{% endblock %}
 
 {% block page_css %}
-  {% stylesheet 'nightly_firstrun' %}
+  {{ css_bundle('nightly_firstrun') }}
 {% endblock %}
 
 {% add_lang_files "firstrun" "mobile" %}

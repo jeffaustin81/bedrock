@@ -8,11 +8,11 @@ from django.http import HttpResponse
 from django.test.client import RequestFactory
 
 import basket
-from bedrock.base.urlresolvers import reverse
-from mock import DEFAULT, Mock, patch
+from mock import ANY, DEFAULT, patch
 from nose.tools import eq_
 from pyquery import PyQuery as pq
 
+from bedrock.base.urlresolvers import reverse
 from bedrock.mozorg.tests import TestCase
 from bedrock.newsletter.tests import newsletters
 from bedrock.newsletter.views import (
@@ -23,10 +23,6 @@ from bedrock.newsletter.views import (
     unknown_address_text,
     updated,
 )
-
-
-cache_mock = Mock()
-cache_mock.get.return_value = None
 
 
 def assert_redirect(response, url):
@@ -44,7 +40,6 @@ def assert_redirect(response, url):
         (url, response['Location'])
 
 
-@patch('bedrock.newsletter.utils.cache', cache_mock)
 class TestViews(TestCase):
     def setUp(self):
         self.rf = RequestFactory()
@@ -72,7 +67,6 @@ class TestViews(TestCase):
 # Always mock basket.request to be sure we never actually call basket
 # during tests.
 @patch('basket.base.request')
-@patch('bedrock.newsletter.utils.cache', cache_mock)
 class TestExistingNewsletterView(TestCase):
     def setUp(self):
         self.token = unicode(uuid.uuid4())
@@ -273,7 +267,7 @@ class TestExistingNewsletterView(TestCase):
         self.assertEqual(1, basket_patches['update_user'].call_count)
         kwargs = basket_patches['update_user'].call_args[1]
         self.assertEqual(
-            {'newsletters': u'mozilla-and-you,firefox-tips'},
+            {'newsletters': u'mozilla-and-you,firefox-tips', 'lang': u'en'},
             kwargs
         )
         # Should not have called unsubscribe
@@ -302,7 +296,7 @@ class TestExistingNewsletterView(TestCase):
         self.assertEqual(1, basket_patches['update_user'].call_count)
         kwargs = basket_patches['update_user'].call_args[1]
         self.assertEqual(
-            {'newsletters': u''},
+            {'newsletters': u'', 'lang': u'pt'},
             kwargs
         )
         # Should not have called subscribe
@@ -346,7 +340,9 @@ class TestExistingNewsletterView(TestCase):
         self.data['lang'] = 'en'
         self.data['country'] = 'us'
 
-        url = reverse('newsletter.existing.token', args=(self.token,))
+        with self.activate('en-US'):
+            url = reverse('newsletter.existing.token', args=(self.token,))
+
         with patch.multiple('basket',
                             update_user=DEFAULT,
                             subscribe=DEFAULT,
@@ -431,7 +427,6 @@ class TestExistingNewsletterView(TestCase):
                          newsletters_in_order)
 
 
-@patch('bedrock.newsletter.utils.cache', cache_mock)
 class TestConfirmView(TestCase):
     def setUp(self):
         self.token = unicode(uuid.uuid4())
@@ -486,6 +481,32 @@ class TestConfirmView(TestCase):
             self.assertFalse(context['success'])
             self.assertFalse(context['generic_error'])
             self.assertTrue(context['token_error'])
+
+
+class TestSetCountryView(TestCase):
+    def setUp(self):
+        self.token = unicode(uuid.uuid4())
+        self.url = reverse('newsletter.country', kwargs={'token': self.token})
+
+    def test_normal_submit(self):
+        """Confirm works with a valid token"""
+        with patch('basket.request') as basket_mock:
+            basket_mock.return_value = {'status': 'ok'}
+            rsp = self.client.post(self.url, {'country': 'gb'})
+
+        self.assertEqual(302, rsp.status_code)
+        basket_mock.assert_called_with('post', 'user-meta', data={'country': 'gb'}, token=self.token)
+        assert_redirect(rsp, reverse('newsletter.country_success'))
+
+    @patch('basket.request')
+    @patch('bedrock.newsletter.views.messages')
+    def test_basket_down(self, messages_mock, basket_mock):
+        """If basket is down, we report the appropriate error"""
+        basket_mock.side_effect = basket.BasketException()
+        rsp = self.client.post(self.url, {'country': 'gb'})
+        self.assertEqual(200, rsp.status_code)
+        basket_mock.assert_called_with('post', 'user-meta', data={'country': 'gb'}, token=self.token)
+        messages_mock.add_message.assert_called_with(ANY, messages_mock.ERROR, ANY)
 
 
 class TestRecoveryView(TestCase):

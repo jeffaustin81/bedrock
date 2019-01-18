@@ -1,12 +1,12 @@
 {% extends "security/base.html" %}
 
-{% block page_title %}Mozilla Security Bug Bounty Program{% endblock %}
+{% block page_title %}Web and Services Bug Bounty Program{% endblock %}
 {% set body_id = "web-bug-bounty" %}
 
 {% block article %}
-  <article class="section-content" itemscope itemtype="http://schema.org/Article">
+  <article itemscope itemtype="http://schema.org/Article">
     <header>
-      <h1 itemprop="name" class="title-shadow-box">Web and Services Bug Bounty Program</h1>
+      <h1 itemprop="name"><span class="highlight">Web and Services Bug Bounty Program</span></h1>
     </header>
 
     <div itemprop="articleBody">
@@ -14,9 +14,11 @@
 
       <p>The Mozilla Bug Bounty Program is designed to encourage security research into Mozilla's websites and services and to reward those who find unique and original bugs in our web infrastructure.</p>
 
+      <p>Please submit all bug reports via our <a href="{{ url('security.bug-bounty.faq-webapp') }}#bug-reporting">secure bug reporting process</a>.</p>
+
       <h2 id="payouts-section">Payouts</h2>
 
-      <table id="payouts" class="table">
+      <table id="payouts" class="data-table">
         <thead>
           <tr>
             <th>Bug Classification</th>
@@ -95,7 +97,7 @@
         </tbody>
       </table>
 
-      <ol>
+      <ol class="prose">
         <li>Excludes community websites</li>
         <li>Includes IDORs that bypass authentication or authorization for significant actions</li>
         <li>Significant actions only, such as changing email/passwords, deleting accounts, etc.</li>
@@ -110,7 +112,7 @@
       <h2 id="exclusions">Exclusions</h2>
       <p>Although we still appreciate being notified about them, the following issues fall outside the scope of our bug bounty program:</p>
 
-      <ul>
+      <ul class="prose">
         <li>Self-XSS</li>
         <li>Executing scripts on sandboxed domains (such as bmoattachments or mozillademos)</li>
         <li>CSRF for non-significant actions (logout, etc.)</li>
@@ -131,42 +133,8 @@
 
       <h2 id="how-to-submit-bugs">How To Submit Bugs</h2>
 
-      <p>The sooner we can reproduce and fix the bug, the sooner we can
-        fix it and send you your bounty. Please submit all bugs through
-        the <a href="https://bugzilla.mozilla.org/form.web.bounty">Bugzilla web bounty form</a>.
-        <strong>Do not send vulnerabilities via email and please avoid using video.</strong></p>
+      <p>Please submit all bug reports via our <a href="{{ url('security.bug-bounty.faq-webapp') }}#bug-reporting">secure bug reporting process</a>.</p>
 
-      <p>There are three main things you can provide which will help us
-        to evaluate your submission quickly and pay a bounty sooner:</p>
-
-      <ol>
-        <li><a href="{{ url('security.bug-bounty.faq-webapp') }}#attack-scenario">What is the attack scenario?</a></li>
-        <li><a href="{{ url('security.bug-bounty.faq-webapp') }}#step-by-step-exploit">What is the step-by-step exploit process?</a></li>
-        <li>What is the security impact?</li>
-      </ol>
-
-      <p>Once you have <em>written</em> your step-by-step instructions,
-        repeat the attack by following them exactly. This helps prevent
-        errors and omissions in your submission.</p>
-
-      <p>We prefer to receive bug reports in English. If English is not
-        your native language and you are not fluent, please submit bugs
-        in your native language. Please note that this may delay our
-        response time.</p>
-
-      <h2>Eligibility</h2>
-
-      <p>All security bugs must follow the following general criteria
-        to be eligible:</p>
-
-      <ul>
-        <li>Security bug must be original and previously unreported.</li>
-        <li>Submitter must not be the author of the buggy code nor otherwise involved in its contribution to the Mozilla project.</li>
-        <li>Employees of the Mozilla Foundation and its subsidiaries are ineligible.</li>
-      </ul>
-
-      <p>If a bug is reported by a team or by multiple researchers
-        simultaneously, the bounty will be split evenly amongst them.</p>
     </div>
   </article>
 {% endblock %}

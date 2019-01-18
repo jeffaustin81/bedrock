@@ -1,0 +1,23 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+@import '../../../protocol/css/includes/lib';
+
+.mzp-c-navigation {
+    .mzp-c-navigation-download .download-list {
+        margin-bottom: 0;
+    }
+
+    .mzp-c-card {
+        .mzp-c-card-image {
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+
+        .mzp-c-card-image[data-src] {
+            opacity: 0;
+        }
+    }
+}
+

@@ -1,0 +1,97 @@
+{# This Source Code Form is subject to the terms of the Mozilla Public
+ # License, v. 2.0. If a copy of the MPL was not distributed with this
+ # file, You can obtain one at http://mozilla.org/MPL/2.0/. -#}
+
+{% extends "firefox/base-pebbles.html" %}
+
+{% block page_title_prefix %}{% endblock %}
+{% block page_title %}{{_('Firefox Quantum for Enterprise Web Browser | Firefox')}}{% endblock %}
+{% block page_desc %}{{_('A managed version of the super-fast new Firefox.')}}{% endblock %}
+
+{% block page_css %}
+  {{ css_bundle('firefox_enterprise') }}
+{% endblock %}
+
+{% block body_id %}firefox{% endblock %}
+{% block body_class %}{% endblock %}
+
+{% block content %}
+<main role="main">
+  <section class="intro content-section">
+    <div class="content">
+      <div class="copy">
+        {{ high_res_img('logos/firefox/logo-quantum.png', {'alt': 'Firefox', 'width': '100', 'height': '100', 'class': 'logo'}) }}
+          <h1>{{ _('Firefox Quantum for Enterprise') }}</h1>
+          <p>{{ _('Speed up your business by giving employees a managed version of the super-fast new Firefox. <em>Now with Windows Group Policy support.</em>') }}</p>
+          <div class="copy-cta">
+            <a href="{{ url('firefox.enterprise.signup') }}" class="button button-green qa-sign-up">{{ _('Find Out More') }}</a>
+          </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="details content-section">
+    <div class="content">
+      <ul>
+        <li>
+          <h3>{{ _('Easy administration') }}</h3>
+          <p>
+          {% trans %}
+            Set up policies (e.g. proxy, restrict features) with Group Policy on Windows and a JSON file on Mac and Linux.
+          {% endtrans %}
+          </p>
+        </li>
+        <li>
+          <h3>{{ _('Fast and lightweight') }}</h3>
+          <p>
+          {% trans %}
+            Powered by a cutting-edge engine, Firefox is now 2X faster than it was and uses 30% less RAM than Chrome.
+          {% endtrans %}
+          </p>
+        </li>
+        <li>
+          <h3>{{ _('Proven and private') }}</h3>
+          <p>
+          {% trans %}
+            Firefox is open source and is trusted by thousands of businesses to protect user and organizational privacy.
+          {% endtrans %}
+          </p>
+        </li>
+      </ul>
+
+      <table class="download-table">
+        <caption><h3>{{ _('Firefox Enterprise Downloads') }}</h3></caption>
+        <tbody>
+          <tr>
+            <th>{{ _('Firefox Rapid Release') }}</th>
+            <td><a class="qa-download-release" href="{{ firefox_url('desktop', 'all') }}">{{ _('Download Firefox') }}</a></td>
+          </tr>
+          <tr>
+            <th>{{ _('Firefox Extended Support Release (ESR)') }}</th>
+            <td><a class="qa-download-esr" href="{{ firefox_url('desktop', 'all', 'esr') }}">{{ _('Download ESR') }}</a></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table class="download-table">
+        <caption><h3>{{ _('Resources') }}</h3></caption>
+        <tbody>
+          <tr>
+            <th>{{ _('Support & Documentation') }}</th>
+            <td><a href="https://support.mozilla.org/products/firefox-enterprise/">{{ _('Learn More') }}</a></td>
+          </tr>
+          <tr>
+            <th>{{ _('Windows Group Policy ADMX Templates') }}</th>
+            <td><a href="https://github.com/mozilla/policy-templates/releases/">{{ _('Get Templates') }}</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+{% endblock %}
+
+{% block email_form %}{% endblock %}
+
+{# Bug 1381776 #}
+{% block update_notification %}{% endblock %}

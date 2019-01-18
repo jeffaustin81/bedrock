@@ -4,7 +4,8 @@
 
 {% extends "firefox/base-pebbles.html" %}
 
-{% block extra_meta %}<meta name="robots" content="noindex">{% endblock %}
+{# "noindex" pages should not have the canonical or hreflang tags: bug 1442331 #}
+{% block canonical_urls %}<meta name="robots" content="noindex,follow">{% endblock %}
 
 {% block gtm_page_id %}data-gtm-page-id="/firefox/whatsnew/"{% endblock %}
 
@@ -19,7 +20,7 @@
 
 {% block extrahead %}
   {% if switch('firefox-update-notification-modal', ['en-US']) %}
-    {% stylesheet 'firefox-update-notification-modal' %}
+    {{ css_bundle('firefox-update-notification-firstrun-whatsnew') }}
   {% endif %}
 {% endblock %}
 
@@ -27,6 +28,6 @@
 {% block update_notification %}
   {% if switch('firefox-update-notification-modal', ['en-US']) %}
     {% include 'includes/firefox-update-instructions.html' %}
-    {% javascript 'firefox-update-notification-modal' %}
+    {{ js_bundle('firefox-update-notification-firstrun-whatsnew') }}
   {% endif %}
 {% endblock %}

@@ -14,9 +14,17 @@ from bedrock.base import waffle
 from bedrock.utils import expand_locale_groups
 
 
+CSS_TEMPLATE = '<link href="%s" rel="stylesheet" type="text/css" />'
+JS_TEMPLATE = '<script type="text/javascript" src="%s" charset="utf-8"></script>'
+
+
 @library.global_function
-def send_to_device_countries():
-    return '|%s|' % '|'.join(cc.lower() for cc in settings.SEND_TO_DEVICE_COUNTRIES)
+def send_to_device_sms_countries(message_set):
+    try:
+        countries = settings.SEND_TO_DEVICE_MESSAGE_SETS[message_set]['sms_countries']
+    except KeyError:
+        countries = ['US']
+    return '|%s|' % '|'.join(cc.lower() for cc in countries)
 
 
 @library.global_function
@@ -89,8 +97,16 @@ def _urlencode(items):
 
 
 @library.filter
+def mailtoencode(txt):
+    """Url encode a string using %20 for spaces."""
+    if isinstance(txt, unicode):
+        txt = txt.encode('utf-8')
+    return urllib.quote(txt)
+
+
+@library.filter
 def urlencode(txt):
-    """Url encode a path."""
+    """Url encode a string using + for spaces."""
     if isinstance(txt, unicode):
         txt = txt.encode('utf-8')
     return urllib.quote_plus(txt)
@@ -102,6 +118,28 @@ def static(path):
 
 
 @library.global_function
+def js_bundle(name):
+    """Include a JS bundle in the template.
+
+    Bundles are defined in the "media/static-bundles.json" file.
+    """
+    path = 'js/BUNDLES/{}.js'.format(name)
+    path = staticfiles_storage.url(path)
+    return jinja2.Markup(JS_TEMPLATE % path)
+
+
+@library.global_function
+def css_bundle(name):
+    """Include a CSS bundle in the template.
+
+    Bundles are defined in the "media/static-bundles.json" file.
+    """
+    path = 'css/BUNDLES/{}.css'.format(name)
+    path = staticfiles_storage.url(path)
+    return jinja2.Markup(CSS_TEMPLATE % path)
+
+
+@library.global_function
 def alternate_url(path, locale):
     alt_paths = settings.ALT_CANONICAL_PATHS
     path = path.lstrip('/')
@@ -109,3 +147,21 @@ def alternate_url(path, locale):
         return alt_paths[path][locale]
 
     return None
+
+
+@library.global_function
+@jinja2.contextfunction
+def get_donate_params(ctx):
+    """Returns donation params for the current locale with an added key
+    containing a list version of the preset donation amounts.
+
+    :returns: dictionary of donation values, including list of amount presets
+    """
+
+    donate_params = settings.DONATE_PARAMS.get(
+        ctx['LANG'], settings.DONATE_PARAMS['en-US'])
+
+    # presets are stored as a string but we need a list for views
+    donate_params['preset_list'] = donate_params['presets'].split(',')
+
+    return donate_params
